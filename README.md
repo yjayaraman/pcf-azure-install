@@ -4,7 +4,7 @@
 1. Bash 
 2. Git
 3. Github account
-4. `git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git ` or download
+4. `git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git ` or download https://github.com/yjayaraman-pivotal/pcf-azure-install/archive/master.zip
 
 
 ## Steps to setup Azure Env
@@ -15,7 +15,7 @@
 5. Create a jumpbox (coming soon in the script)
 6. SSH into the jumpbox
 7. sudo apt-get update && sudo apt-get install git
-8. `git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git ` or download
+8. `git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git ` or download https://github.com/yjayaraman-pivotal/pcf-azure-install/archive/master.zip
 9. cd to the directory
 10. Run setupbosh.sh
 11. Run download_artifacts.sh
