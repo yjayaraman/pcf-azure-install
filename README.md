@@ -13,4 +13,4 @@
 4. Once the env is setup, using a Browser log into your Azure portal
 5. Create a jumpbox (coming soon in the script)
 6. SSH into the jumpbox
-7. 
+7. Git clone 
