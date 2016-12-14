@@ -16,12 +16,13 @@
 6. SSH into the jumpbox
 7. sudo apt-get update && sudo apt-get install git
 8. `git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git ` or download https://github.com/yjayaraman-pivotal/pcf-azure-install/archive/master.zip
-9. cd to the directory
+9. cd to the <checkout directory>/scripts
 10. Run setupbosh.sh
-11. Run download_artifacts.sh
+11. Copy <checkout directory>//templates/bosh.cnf ~/manifests/deployments/bosh.yml
 12. cd manifests/deployments
 13. ssh-keygen -t rsa -f ~/bosh -P "" -C ""
-13. modify bosh.yml (to update it with your Azure info, put the ssh info, etc.)
+13. modify bosh.yml (to update it with your Azure info, put the ssh info, etc.), Look for variables starting __ and replace it with the appropriate values
+
 
 To be continued ....
 
