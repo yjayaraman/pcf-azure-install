@@ -4,7 +4,6 @@
 1. Bash 
 2. Git
 3. Github account
-4. 
 
 
 ## Steps to setup Azure Env
