@@ -3,8 +3,7 @@
 # This script is 'opinionated' and makes the following assumption
 #
 #   1.  Azure CLI is installed on the machine this script is run
-#   2.  Everything will be created against the selected ("Default") Azure subscription
-#   3.  Current User has sufficient privileges to create AAD application and service principal
+#   2.  You need to have a valid SubscriptionID and a ResourceGroup created in the location of choice"
 #     
 #
 #   On completion, this script will print the output parameters such as 
@@ -22,18 +21,76 @@ spinner()
   spin[3]="/"
 
   loop=1
-  while [ $loop -le 100 ]
+  while [ $loop -le 100 ];
   do
     #Increment the loop
     loop=$((loop + 1))
     for i in "${spin[@]}"
     do
-        echo -ne "\b\b\b\b\b\b\b\b\b\b\b$i We are done!!!!"
+        echo -ne "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b$i We are done!!!!"
         sleep 0.1
     done
   done
 }
 
+yesno()
+{
+  local Y_N
+  while [ -z $Y_N ]
+  do
+      read -p "Do you want to continue? [y/n] " Y_N
+
+      case "$Y_N" in
+              y)
+                  return
+                  ;;
+               
+              n)
+                  exit
+                  ;;
+               
+              *)
+                  Y_N=""
+       
+      esac
+  done
+}
+
+echo_tofile()
+{
+
+  FILENAME="create_azure_gov.txt"
+  # Opening file descriptors # 3 for reading and writing
+  # i.e. /tmp/out.txt
+  exec 3<>$FILENAME
+
+  # Write to file
+  echo "ENVIRONMENT=$ENVIRONMENT  " >&3
+  echo "SUBSCRIPTION_ID=$SUBSCRIPTIONID  " >&3
+  echo "TENANTID=$TENANTID  " >&3
+  echo "APP ID URI =$IDURIS " >&3
+  echo "HOMEPAGE=$HOMEPAGE  " >&3
+  echo "PCFBOSHNAME=$PCFBOSHNAME  " >&3
+  echo "CLIENTID=$CLIENTID  " >&3
+  echo "CLIENTSECRET=$CLIENTSECRET  " >&3
+  echo "RESOURCE_GROUP=$RESOURCE_GROUP  " >&3
+  echo "LOCATION=$LOCATION  " >&3
+  echo "PCF_NET=$PCF_NET  " >&3
+  echo "PCF_NSG=$PCF_NSG  " >&3
+  echo "STORAGE_NAME=$STORAGE_NAME  " >&3
+  echo "XTRA_STORAGE_NAME=$XTRA_STORAGE_NAME " >&3
+  echo "PCF_LB=$PCF_LB " >&3
+  echo "PCF_LB_IP=$PCF_LB_IP " >&3
+  echo "PUBLIC_IP=$PUBLIC_IP " >&3
+  echo "PCF_FE_IP=$PCF_FE_IP " >&3
+  echo "PCF_SSH_LB_IP=$PCF_SSH_LB_IP " >&3
+  echo "PUBLIC_SSH_IP=$PUBLIC_SSH_IP " >&3
+  echo "PCF_SSH_FE_IP=$PCF_SSH_FE_IP " >&3
+
+
+  # close fd # 3
+  exec 3>&-
+}
 echo_inputs()
 {
 
@@ -57,71 +114,21 @@ echo_inputs()
   echo "*   PCF_LB_IP          :    $PCF_LB_IP " 
   echo "*   PUBLIC_IP          :    $PUBLIC_IP " 
   echo "*   PCF_FE_IP          :    $PCF_FE_IP " 
-  echo "*                                                                                   "
+  echo "*   PCF_SSH_LB_IP      :    $PCF_SSH_LB_IP " 
+  echo "*   PUBLIC_SSH_IP      :    $PUBLIC_SSH_IP " 
+  echo "*   PCF_SSH_FE_IP      :    $PCF_SSH_FE_IP "                                                                                    
   echo "*************************************************************************************"
 
-  FILENAME="create_azure_gov.txt"
-  # Opening file descriptors # 3 for reading and writing
-  # i.e. /tmp/out.txt
-  exec 3<>$FILENAME
-
-  # Write to file
-  echo "{" >&3
-  echo "ENVIRONMENT        :    $ENVIRONMENT  " >&3
-  echo "*   SUBSCRIPTION_ID    :    $SUBSCRIPTIONID  " >&3
-  echo "*   TENANTID           :    $TENANTID  " >&3
-  echo "*   APP ID URI         :    $IDURIS " >&3
-  echo "*   HOMEPAGE           :    $HOMEPAGE  " >&3
-  echo "*   PCFBOSHNAME        :    $PCFBOSHNAME  " >&3
-  echo "*   CLIENTID           :    $CLIENTID  " >&3
-  echo "*   CLIENTSECRET       :    $CLIENTSECRET  " >&3
-  echo "*   RESOURCE_GROUP     :    $RESOURCE_GROUP  " >&3
-  echo "*   LOCATION           :    $LOCATION  " >&3
-  echo "*   PCF_NET            :    $PCF_NET  " >&3
-  echo "*   PCF_NSG            :    $PCF_NSG  " >&3
-  echo "*   STORAGE_NAME       :    $STORAGE_NAME  " >&3
-  echo "*   XTRA_STORAGE_NAME  :    $XTRA_STORAGE_NAME " >&3
-  echo "*   PCF_LB             :    $PCF_LB " >&3
-  echo "*   PCF_LB_IP          :    $PCF_LB_IP " >&3
-  echo "*   PUBLIC_IP          :    $PUBLIC_IP " >&3
-  echo "*   PCF_FE_IP          :    $PCF_FE_IP " >&3
-  echo "*                                                                                   " >&3
-  echo "*************************************************************************************" >&3
-
-  # close fd # 3
-  exec 3>&-
-
-#echo "{"
-#echo "  \"\$schema\": \"http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#\","
-#echo "  \"contentVersion\": \"1.0.0.0\","
-#echo "  \"parameters\": {"
-#echo "     \"SUBSCRIPTION_ID\": {"
-#echo "       \"value\": \"$SUBSCRIPTIONID\""
-#echo "    },"
-#echo "     \"tenantID\": {"
-#echo "       \"value\": \"$TENANTID\""
-#echo "    },"
-#echo "     \"clientID\": {"
-#echo "       \"value\": \"$CLIENTID\""
-#echo "    },"
-#echo "     \"CLIENTSECRET\": {"
-#echo "       \"value\": \"$CLIENTSECRET\""
-#echo "    }"
-#echo "  }"
-#echo "}"
-
 }
+
 usage() 
 {
-  echo "$0 <azure subscription name>"
-  echo '           This script creates a new Azure Service Principal under this subscription, '
-  echo '           returning a clientID, tenantID, client-secret that can be used to'
-  echo '           populate Azure marketplace offer of Pivotal Cloud Foundry.'
   echo
-  echo '           e.g. "Pay-As-You-Go" is a common subscription name.  '
-  echo
-  echo '           Note that Azure Free Trials do not have sufficient'
-  echo '           quota and are currently not supported.'
+  echo -e " #This script is 'opinionated' and makes the following assumptions:"
+  echo 
+  echo -e "\033[1;92m #   1.  Azure CLI is installed on this machine \033[0m"
+  echo -e "\033[1;92m #   2.  You need to have a valid 'SubscriptionID' \033[0m"
+  echo -e "\033[1;92m #   3.  You need to have a valid 'ResourceGroup' created in the 'Location' of choice  \033[0m"
   echo	
 }
 
@@ -139,43 +146,279 @@ create_service_principal()
   CLIENTID=`azure ad app create --name "$PCFBOSHNAME" --password "$CLIENTSECRET" --identifier-uris ""$IDURIS"" --home-page ""$HOMEPAGE"" | grep  "AppId:" | awk -F':' '{ print $3 } ' | tr -d ' '`  
    
 
-  sleep 10  
-
   azure ad sp create --applicationId $CLIENTID  
-
-  sleep 10  
+ 
 
   azure role assignment create --roleName "Contributor"  --spn "$SPNAME" --subscription $SUBSCRIPTIONID
 
 }
 
-read_input()
+read_subscription_id()
 {
-	local inpt 
-	read -p $1 inpt
-	if [-z $inpt]; then
-		return $2
-	fi
-	return inpt
+  while [ -z $SUBSCRIPTIONID ]; do
+      echo
+      azure account list | grep -w "Enabled" | grep -w "true" | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'
+      echo 
+      read -p "Enter SUBSCRIPTIONID from the list above : " SUBSCRIPTIONID
+      if [ -n "$SUBSCRIPTIONID" ]; then
+        SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled" | grep -w "true" | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'  `
+      fi
+  done
+}
+
+read_location() 
+{
+    while [ -z $LOCATION ]; do
+      echo
+      azure location list | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'
+      echo
+      read -p "Enter the location from the list above: " LOCATION 
+      if [ -n "$LOCATION" ]; then
+        LOCATION=`azure location list | grep -w " $LOCATION " | awk -F '[[:space:]][[:space:]]+' '{ print $2 }' ` 
+        echo -e "Using location: $LOCATION" 
+      fi
+
+    done 
+}
+read_resource_group()
+{
+    while [ -z $RESOURCE_GROUP ]; do
+      echo
+      azure group list | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'
+      echo
+      read -p "Enter the Resource Group from the list above: " RESOURCE_GROUP 
+      if [ -n "$RESOURCE_GROUP" ]; then
+        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'  `
+        echo -e "Using resource group: $RESOURCE_GROUP"
+      fi
+    done
+}
+read_nsg()
+{
+    while [ -z $RESOURCE_GROUP ]; do
+      echo
+      azure group list | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'
+      echo
+      read -p "Enter the Resource Group from the list above: " RESOURCE_GROUP 
+      if [ -n "$RESOURCE_GROUP" ]; then
+        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'  `
+        echo -e "Using resource group: $RESOURCE_GROUP"
+      fi
+    done
+}
+
+read_service_principal()
+{
+    while [ -z $CLIENTID ]; do
+      read -p "Enter Service Principal App URI: (Press ENTER for http://pcfbosh): " IDURIS
+      if [ -z $IDURIS ]; then
+          IDURIS="http://pcfbosh"
+      fi  
+      PCFBOSHNAME=${IDURIS:7}
+      HOMEPAGE=$IDURIS
+      SPNAME=$IDURIS 
+      CLIENTID=`azure ad app show --identifierUri $IDURIS | grep  -w AppId | awk -F':' '{print $3}' | tr -d ' '`
+      if [ -n "$CLIENTID" ]; then
+         echo
+         echo " Service Principal exists for $IDURIS "
+         yesno
+         CLIENTSECRET="2c0pmtWhUMlPvykMiwep5Q"
+      else
+        create_service_principal
+      fi       
+      local TEMPSTR=`azure login --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT | grep "login command OK" `
+      if [ -z "$TEMPSTR" ]; then
+          error "Unable to login using --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT "
+          CLIENTID=""
+      fi
+
+    done
+}
+
+read_nsg()
+{
+  read -p "Enter PCF Network Security Group Name: (Press ENTER for pcf-nsg): " PCF_NSG
+  if [ -z $PCF_NSG ]; then
+       PCF_NSG="pcf-nsg"
+  fi
+  local z=$PCF_NSG
+  PCF_NSG=`azure network nsg list | grep -w $PCF_NSG |  grep -w $LOCATION | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'`
+  if [ -n "$PCF_NSG" ]; then
+      echo
+      echo -e "NSG exists for $PCF_NSG"
+      yesno
+  else
+    PCF_NSG=$z
+    create_nsg
+  fi
+
+}
+
+read_vnet()
+{
+  read -p "Enter PCF VNET Name: (Press ENTER for pcf-net): " PCF_NET
+  if [ -z $PCF_NET ]; then
+      PCF_NET="pcf-net"
+  fi 
+  local z=$PCF_NET
+  PCF_NET=`azure network vnet list | grep -w $PCF_NET |  grep -w $LOCATION | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'`
+  if [ -n "$PCF_NET" ]; then
+      echo
+      echo -e "VNET exists for $PCF_NET"
+      yesno
+  else
+    PCF_NET=$z
+    create_vnet
+  fi
+}
+
+
+read_storage()
+{
+  read -p "Enter Storage Account Name: (Press ENTER for pcfsan): " STORAGE_NAME
+  if [ -z $STORAGE_NAME ]; then
+      STORAGE_NAME="pcfsan"
+  fi
+
+  CONNECTIONSTRING=`azure storage account connectionstring show $STORAGE_NAME  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`   
+
+  if [ -n "$CONNECTIONSTRING" ]; then
+      echo
+      echo "Storage exists for $STORAGE_NAME"
+      yesno
+  else
+    create_storage
+  fi
+}
+
+read_xtrastorage()
+{
+    read -p "Enter Extra Storage Account Name: (Press ENTER for xtrapcfsan): " XTRA_STORAGE_NAME
+    if [ -z $XTRA_STORAGE_NAME ]; then
+       XTRA_STORAGE_NAME="xtrapcfsan"
+    fi 
+
+    local loop=1
+    while [ $loop -le 3 ]
+    do
+      CONNECTIONSTRING=`azure storage account connectionstring show $XTRA_STORAGE_NAME$loop  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`  
+      if [ -n "$CONNECTIONSTRING" ]; then
+        echo
+        echo -e "Storage exists for $XTRA_STORAGE_NAME$loop"
+        yesno
+      else
+       create_storage
+      fi 
+      #Increment the loop
+      loop=$((loop + 1)) 
+    done
+
+
+}
+
+
+read_lb()
+{
+    read -p "Enter LB Name: (Press ENTER for pcf-lb): " PCF_LB
+    if [ -z $PCF_LB ]; then
+       PCF_LB="pcf-lb"
+    fi    
+
+ 
+  local z=$PCF_LB
+  PCF_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_LB | awk -F '[[:space:]][[:space:]]+' '{ print $2}'`
+  if [ -n "$PCF_LB" ]; then
+      echo
+      echo "Load Balancer exists for $PCF_LB"
+      yesno
+  else
+    PCF_LB=$z
+    create_lb
+  fi
+}
+
+
+read_ssh_lb()
+{
+    read -p "Enter SSH LB Name: (Press ENTER for pcf-ss-lb): " PCF_SSH_LB
+    if [ -z $PCF_SSH_LB ]; then
+       PCF_SSH_LB="pcf-ssh-lb"
+    fi    
+
+ 
+  local z=$PCF_SSH_LB
+  PCF_SSH_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_SSH_LB | awk -F '[[:space:]][[:space:]]+' '{ print $2}'`
+  if [ -n "$PCF_SSH_LB" ]; then
+      echo
+      echo "Load Balancer exists for $PCF_SSH_LB"
+      yesno
+  else
+    PCF_SSH_LB=$z
+    create_ssh_lb
+  fi
+}
+
+read_inputs_create_resources()
+{
+
+    read_location
+    echo -e "\033[1;34m Using location: $LOCATION \033[0m"
+
+    read_resource_group
+    echo -e "\033[1;34m Using ResourceGroup: $RESOURCE_GROUP \033[0m"
+
+    read_service_principal  
+    echo -e "\033[1;34m Using ResourceGroup: $RESOURCE_GROUP \033[0m"
+
+    read_nsg  
+    echo -e "\033[1;34m Using NSG: $PCF_NSG \033[0m"
+   
+    read_vnet
+    echo -e "\033[1;34m Using VNET: $PCF_NET \033[0m"
+    echo -e "\033[1;34m Using SUBNET: $PCF_SUBNET \033[0m"
+
+    read_storage
+    echo -e "\033[1;34m Using Storage: $STORAGE_NAME \033[0m"
+    
+    read_xtrastorage
+    echo -e "\033[1;34m Using Extra Storage: $XTRA_STORAGE_NAME \033[0m"
+
+    read_lb
+    echo -e "\033[1;34m Using LB: $PCF_LB \033[0m"
+
+    read_ssh_lb
+    echo -e "\033[1;34m Using SSH LB: $PCF_SSH_LB \033[0m"
+
 }
 
 error()
 {
-	echo -e "\033[1;31mERROR:\033[0m " $1 
-
-	echo_inputs
+  echo -e "\033[1;31mERROR:\033[0m " $1 
 }
 
-create_networks()
+fatal()
 {
+  echo -e "\033[1;31mERROR:\033[0m " $1 
 
-   azure network nsg create $RESOURCE_GROUP $PCF_NSG $LOCATION   
+  echo_inputs
+  exit
+}
 
-   azure network nsg rule create $RESOURCE_GROUP $PCF_NSG internet-to-lb --protocol Tcp --priority 100 --destination-port-range '*'   
+create_nsg() 
+{
+    azure network nsg create $RESOURCE_GROUP $PCF_NSG $LOCATION 
+    azure network nsg rule create $RESOURCE_GROUP $PCF_NSG internet-to-lb --protocol Tcp --priority 100 --destination-port-range '*'   
+}
 
-   azure network vnet create $RESOURCE_GROUP $PCF_NET $LOCATION --address-prefixes 10.0.0.0/16   
+create_vnet()
+{
+  read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
+  if [ -z $PCF_SUBNET ]; then
+     PCF_SUBNET="pcf"
+  fi 
 
-   azure network vnet subnet create $RESOURCE_GROUP $PCF_NET $PCF_SUBNET --address-prefix 10.0.0.0/20   
+  azure network vnet create $RESOURCE_GROUP $PCF_NET $LOCATION --address-prefixes 10.0.0.0/16   
+  azure network vnet subnet create $RESOURCE_GROUP $PCF_NET $PCF_SUBNET --address-prefix 10.0.0.0/20   
 
 }
 
@@ -201,7 +444,7 @@ create_storage()
 
 create_xtra_storage()
 {
-    loop=1
+    local loop=1
     while [ $loop -le 3 ]
     do
     	azure storage account create $XTRA_STORAGE_NAME$loop --resource-group $RESOURCE_GROUP --sku-name LRS --kind Storage --subscription $SUBSCRIPTIONID  --location $LOCATION    
@@ -227,9 +470,19 @@ create_lb()
 {
     azure network lb create $RESOURCE_GROUP $PCF_LB $LOCATION    
 
+    read -p "Enter Public IP Name: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
+    if [ -z $PCF_LB_IP ]; then
+       PCF_LB_IP="pcf-lb-ip"
+    fi    
+
+    read -p "Enter LB Frontend IP Name: (Press ENTER for pcf-fe-ip): " PCF_FE_IP
+    if [ -z $PCF_FE_IP ]; then
+       PCF_FE_IP="pcf-fe-ip"
+    fi
+
     azure network public-ip create $RESOURCE_GROUP $PCF_LB_IP $LOCATION --allocation-method Static    
 
-    PUBLIC_IP=`azure network public-ip show yj-pcf-rg pcf-lb-ip | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
+    PUBLIC_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
     if [ -z $PUBLIC_IP ]; then
     	error "Unable to Public IP for $PCF_LB_IP"
     	exit
@@ -245,141 +498,81 @@ create_lb()
 
     azure network lb rule create $RESOURCE_GROUP $PCF_LB https --protocol tcp --frontend-port 443 --backend-port 443    
 
-    azure network lb rule create $RESOURCE_GROUP $PCF_LB diego-ssh --protocol tcp --frontend-port 2222 --backend-port 2222
+}
+
+create_ssh_lb()
+{
+    azure network lb create $RESOURCE_GROUP $PCF_SSH_LB $LOCATION    
+
+    read -p "Enter Public IP Name: (Press ENTER for pcf-ssh-lb-ip): " PCF_SSH_LB_IP
+    if [ -z $PCF_SSH_LB_IP ]; then
+       PCF_SSH_LB_IP="pcf-ssh-lb-ip"
+    fi    
+
+    read -p "Enter LB Frontend IP Name: (Press ENTER for pcf-ssh-fe-ip): " PCF_SSH_FE_IP
+    if [ -z $PCF_SSH_FE_IP ]; then
+       PCF_SSH_FE_IP="pcf-ssh-fe-ip"
+    fi
+
+    azure network public-ip create $RESOURCE_GROUP $PCF_SSH_LB_IP $LOCATION --allocation-method Static    
+
+    PUBLIC_SSH_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_SSH_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
+    if [ -z $PUBLIC_SSH_IP ]; then
+      error "Unable to Public IP for $PCF_SSH_LB_IP"
+      exit
+    fi    
+
+    azure network lb frontend-ip create $RESOURCE_GROUP $PCF_SSH_LB $PCF_SSH_FE_IP --public-ip-name $PCF_SSH_LB_IP    
+
+    azure network lb address-pool create $RESOURCE_GROUP $PCF_SSH_LB pcf-vms    
+
+    azure network lb rule create $RESOURCE_GROUP $PCF_SSH_LB diego-ssh --protocol tcp --frontend-port 2222 --backend-port 2222
 
 }
 
+# -------------------------------------------------------------------------------------------------------
 # Main Program 
-if [ "$#" -ne 1 ]
-then
-  usage
-  exit
-fi
- 
+# -------------------------------------------------------------------------------------------------------
+usage
 
 ENVIRONMENT="AzureUSGovernment"
-echo "Environment Type: 1 - Azure, 2 - AzureUSGovernment"
+echo -e  "Environment Type: 1 - Azure, 2 - AzureUSGovernment"
 read -p "Enter 1 or 2 (Press ENTER for 2):: " env
 if [ -z $env ]; then
-	env=2
+  env=2
 fi
 if [ $env -eq 1 ]; then
   ENVIRONMENT="Azure"
 fi
+
+echo "Start with http://aka.ms/devicelogin"
+echo "will spin here until login completes"
+# start with http://aka.ms/devicelogin
+# will spin here until login completes
+# disable login during testing --- 
+# azure login   --environment $ENVIRONMENT
+ 
 
 
 # ensure ARM mode
 #
 azure config mode arm
 
-# start with http://aka.ms/devicelogin
-# will spin here until login completes
-# disable login during testing --- 
-azure login   --environment $ENVIRONMENT
+read_subscription_id
 
-# capture output for values
-#
-# "id"			SUBSCRIPTION-ID
-# "tenandId"		TENANT-ID
-#
-azure account list --json
+TENANTID=`azure account list --json | grep -A6 ${SUBSCRIPTIONID} | tail -1 | awk -F':' '{ print $2 }' | tr -d ',' | tr -d '"' | tr -d ' ' `
 
-NAME=`azure account list | grep Enabled | grep true | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'`
-SUBSCRIPTIONID=`azure account list | grep "$1" | grep true | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'`
-
-if [ -z $SUBSCRIPTIONID ]; then
-  error "Subscription $1 not found."
-  exit
-fi
-
-TENANTID=`azure account list --json | grep -A6 ${SUBSCRIPTIONID} | tail -1 | awk -F':' '{ print $2 }' | tr -d ',' | tr -d '"' `
+echo -e "\033[1;34m Using SUBSCRIPTIONID: $SUBSCRIPTIONID \033[0m"
+echo -e "\033[1;34m Using TENANTID: $TENANTID \033[0m"
 
 # for multiple subscriptions, select the appropriate
 #
 azure account set $SUBSCRIPTIONID
 
-
-read -p "Enter Service Principal App URI: (Press ENTER for http://pcfbosh): " IDURIS
-if [ -z $IDURIS ]; then
-   IDURIS="http://pcfbosh"
-fi
-
-
-PCFBOSHNAME=${IDURIS:7}
-HOMEPAGE=$IDURIS
-SPNAME=$IDURIS 
-
-create_service_principal
-
-CLIENTID=`azure ad app show --identifierUri $IDURIS | grep  AppId | awk -F':' '{print $3}' | tr -d ' '`
-
-if [ -z $CLIENTID ]; then
-  error "Service Principal $IDURIS not found."
-  exit
-fi
-
-read -p "Enter the location for the install: " LOCATION
-if [ -z $LOCATION ]; then
-   error "Invalid Location"
-   exit
-fi
-
-read -p "Enter Resource Group: (THIS MUST BE CREATED PREVIOUSLY FROM AZURE PORTAL): " RESOURCE_GROUP
-if [ -z $RESOURCE_GROUP ]; then
-   error "Invalid Resource Group"
-   exit
-fi
-
-read -p "Enter PCF Network Security Group Name: (Press ENTER for pcf-nsg): " PCF_NSG
-if [ -z $PCF_NSG ]; then
-   PCF_NSG="pcf-nsg"
-fi
-
-read -p "Enter PCF VNET Name: (Press ENTER for pcf-net): " PCF_NET
-if [ -z $PCF_NET ]; then
-   PCF_NET="pcf-net"
-fi
-
-read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
-if [ -z $PCF_SUBNET ]; then
-   PCF_SUBNET="pcf"
-fi
-
-read -p "Enter Storage Account Name: (Press ENTER for pcfsan): " STORAGE_NAME
-if [ -z $STORAGE_NAME ]; then
-   STORAGE_NAME="pcfsan"
-fi
-
-create_networks
-
-create_storage
-
-
-read -p "Enter Extra Storage Account Name: (Press ENTER for xtrapcfsan): " XTRA_STORAGE_NAME
-if [ -z $XTRA_STORAGE_NAME ]; then
-   XTRA_STORAGE_NAME="xtrapcfsan"
-fi
-
-create_xtra_storage
-
-read -p "Enter LB Name: (Press ENTER for pcf-lb): " PCF_LB
-if [ -z $PCF_LB ]; then
-   PCF_LB="pcf-lb"
-fi
-
-read -p "Enter Public IP Name: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
-if [ -z $PCF_LB_IP ]; then
-   PCF_LB_IP="pcf-lb-ip"
-fi
-
-read -p "Enter LB Frontend IP Name: (Press ENTER for pcf-fe-ip): " PCF_FE_IP
-if [ -z $PCF_FE_IP ]; then
-   PCF_FE_IP="pcf-fe-ip"
-fi
-
-create_lb
+read_inputs_create_resources
 
 echo_inputs
+echo_tofile
 
 spinner
 
