@@ -299,19 +299,21 @@ read_storage()
   while [ -z $STORAGE_NAME ]; do
     read -p "Enter Storage Account Name: " STORAGE_NAME
   done
+  local z=$STORAGE_NAME
+  #CONNECTIONSTRING=`azure storage account connectionstring show $STORAGE_NAME  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`   
+  STORAGE_NAME=`azure storage account list | grep -w $STORAGE_NAME |  awk -F '[[:space:]][[:space:]]+' '{ print $2}'`
 
-  CONNECTIONSTRING=`azure storage account connectionstring show $STORAGE_NAME  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`   
-
-  if [ -n "$CONNECTIONSTRING" ]; then
+  if [ -n "$STORAGE_NAME" ]; then
       echo
       echo "Storage exists for $STORAGE_NAME"
       local Y_N=`yesnodelete`
       if [ $Y_N = 'd' ]; then
         azure storage account delete $STORAGE_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTIONID
-        CONNECTIONSTRING=""
+        STORAGE_NAME=""
       fi
   fi 
-  if [ -z "$CONNECTIONSTRING" ]; then
+  if [ -z "$STORAGE_NAME" ]; then
+    STORAGE_NAME=$z
     create_storage
   fi
 }
@@ -321,25 +323,27 @@ read_xtrastorage()
     while [ -z $XTRA_STORAGE_NAME ]; do
       read -p "Enter Extra Storage Account Name: " XTRA_STORAGE_NAME
     done 
-
+    local z=$XTRA_STORAGE_NAME
     local loop=1
     while [ $loop -le 3 ]
     do
-      CONNECTIONSTRING=`azure storage account connectionstring show $XTRA_STORAGE_NAME$loop  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`  
-      if [ -n "$CONNECTIONSTRING" ]; then
+      XTRA_STORAGE_NAME=`azure storage account list | grep -w $XTRA_STORAGE_NAME$loop |  awk -F '[[:space:]][[:space:]]+' '{ print $2}'`  
+      if [ -n "$XTRA_STORAGE_NAME" ]; then
         echo
-        echo -e "Storage exists for $XTRA_STORAGE_NAME$loop"
+        echo -e "Storage exists for $XTRA_STORAGE_NAME"
         local Y_N=`yesnodelete`
         if [ $Y_N = 'd' ]; then
           azure storage account delete $XTRA_STORAGE_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTIONID
-          CONNECTIONSTRING=""
+          XTRA_STORAGE_NAME=""
         fi
       fi 
-      if [ -z "$CONNECTIONSTRING" ]; then
-       create_xtra_storage
+      if [ -z "$XTRA_STORAGE_NAME" ]; then
+       XTRA_STORAGE_NAME=$z
+       create_xtra_storage $loop
       fi 
       #Increment the loop
       loop=$((loop + 1)) 
+      XTRA_STORAGE_NAME=$z
     done
 
 
@@ -497,26 +501,19 @@ create_storage()
 
 create_xtra_storage()
 {
-    local loop=1
-    while [ $loop -le 3 ]
-    do
-    	azure storage account create $XTRA_STORAGE_NAME$loop --resource-group $RESOURCE_GROUP --sku-name LRS --kind Storage --subscription $SUBSCRIPTIONID  --location $LOCATION    
+      azure storage account create $XTRA_STORAGE_NAME$1 --resource-group $RESOURCE_GROUP --sku-name LRS --kind Storage --subscription $SUBSCRIPTIONID  --location $LOCATION    
 
-    	CONNECTIONSTRING=`azure storage account connectionstring show $XTRA_STORAGE_NAME$loop  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`    
+      CONNECTIONSTRING=`azure storage account connectionstring show $XTRA_STORAGE_NAME$1  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`    
 
-    	if [ -z $CONNECTIONSTRING ]; then
-    		error "Unable to get Connection String for Storage Account $XTRA_STORAGE_NAME$loop"
-    		exit
-    	fi    
+      if [ -z $CONNECTIONSTRING ]; then
+        error "Unable to get Connection String for Storage Account $XTRA_STORAGE_NAME$1"
+        exit
+      fi    
 
-    	azure storage container create bosh --connection-string $CONNECTIONSTRING    
+      azure storage container create bosh --connection-string $CONNECTIONSTRING    
 
-    	azure storage container create stemcell --permission blob --connection-string $CONNECTIONSTRING    
+      azure storage container create stemcell --permission blob --connection-string $CONNECTIONSTRING 
 
-        #Increment the loop
-        loop=$((loop + 1))    
-
-    done	
 }
 
 create_lb()
@@ -653,8 +650,15 @@ echo_inputs
 
 echo_tofile
 
+#azure vm quick-create -v  --name pcf-jump-box --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --vm-size Standard_DS1 --admin-username ubuntu --admin-password K33pitsimp!e
+
 echo -e "\033[1;92m Script ran successfully your environment has been created!!! \033[0m" 
 echo -e "\033[1;92m Now create a Jumpbox \033[0m" 
+echo -e "\033[1;92m sftp the generated bosh.yml \033[0m" 
+echo -e "\033[1;92m On the jumpbox run sudo apt-get install git \033[0m" 
+echo -e "\033[1;92m git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git \033[0m" 
+echo -e "\033[1;92m cd pcf-azure-install\\scripts \033[0m" 
+echo -e "\033[1;92m run setupbosh.sh \033[0m" 
 
 #spinner
 
