@@ -33,16 +33,20 @@ spinner()
   done
 }
 
-yesno()
+yesnodelete()
 {
   local Y_N
   while [ -z $Y_N ]
   do
-      read -p "Do you want to continue? [y/n] " Y_N
+      read -p "Do you want to continue[y/n/d]: y - continue, n - abort, d - delete?  " Y_N
 
       case "$Y_N" in
+              d)
+                  echo $Y_N
+                  ;;
+               
               y)
-                  return
+                  echo $Y_N
                   ;;
                
               n)
@@ -51,6 +55,7 @@ yesno()
                
               *)
                   Y_N=""
+                  echo $Y_N
        
       esac
   done
@@ -80,16 +85,13 @@ echo_tofile()
   echo "STORAGE_NAME=$STORAGE_NAME  " >&3
   echo "XTRA_STORAGE_NAME=$XTRA_STORAGE_NAME " >&3
   echo "PCF_LB=$PCF_LB " >&3
-  echo "PCF_LB_IP=$PCF_LB_IP " >&3
   echo "PUBLIC_IP=$PUBLIC_IP " >&3
-  echo "PCF_FE_IP=$PCF_FE_IP " >&3
-  echo "PCF_SSH_LB_IP=$PCF_SSH_LB_IP " >&3
+  echo "PCF_SSH_LB=$PCF_SSH_LB " >&3
   echo "PUBLIC_SSH_IP=$PUBLIC_SSH_IP " >&3
-  echo "PCF_SSH_FE_IP=$PCF_SSH_FE_IP " >&3
-
 
   # close fd # 3
   exec 3>&-
+
 }
 echo_inputs()
 {
@@ -111,12 +113,9 @@ echo_inputs()
   echo "*   STORAGE_NAME       :    $STORAGE_NAME  "
   echo "*   XTRA_STORAGE_NAME  :    $XTRA_STORAGE_NAME "
   echo "*   PCF_LB             :    $PCF_LB " 
-  echo "*   PCF_LB_IP          :    $PCF_LB_IP " 
   echo "*   PUBLIC_IP          :    $PUBLIC_IP " 
-  echo "*   PCF_FE_IP          :    $PCF_FE_IP " 
-  echo "*   PCF_SSH_LB_IP      :    $PCF_SSH_LB_IP " 
-  echo "*   PUBLIC_SSH_IP      :    $PUBLIC_SSH_IP " 
-  echo "*   PCF_SSH_FE_IP      :    $PCF_SSH_FE_IP "                                                                                    
+  echo "*   PCF_SSH_LB         :    $PCF_SSH_LB " 
+  echo "*   PUBLIC_SSH_IP      :    $PUBLIC_SSH_IP "                                                                                    
   echo "*************************************************************************************"
 
 }
@@ -138,7 +137,7 @@ create_service_principal()
 
   # client-secret		CLIENT-SECRET
   #
-  CLIENTSECRET=`openssl rand -base64 16 | tr -dc _A-z-a-z-0-9`  
+  #CLIENTSECRET=`openssl rand -base64 16 | tr -dc _A-z-a-z-0-9`  
 
   # "application Id"	 CLIENT-ID
   #  
@@ -217,13 +216,20 @@ read_service_principal()
       PCFBOSHNAME=${IDURIS:7}
       HOMEPAGE=$IDURIS
       SPNAME=$IDURIS 
+      CLIENTSECRET="keepitsimple"
       CLIENTID=`azure ad app show --identifierUri $IDURIS | grep  -w AppId | awk -F':' '{print $3}' | tr -d ' '`
+      local OBJECTID=`azure ad app show --identifierUri $IDURIS | grep  -w ObjectId | awk -F':' '{print $3}' | tr -d ' '`
       if [ -n "$CLIENTID" ]; then
          echo
          echo " Service Principal exists for $IDURIS "
-         yesno
-         CLIENTSECRET="2c0pmtWhUMlPvykMiwep5Q"
-      else
+         local Y_N=`yesnodelete`
+         if [ $Y_N = 'd' ]; then
+            azure ad app delete $OBJECTID
+            CLIENTID=""
+         fi
+      fi 
+
+      if [ -z "$CLIENTID" ]; then
         create_service_principal
       fi       
       local TEMPSTR=`azure login --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT | grep "login command OK" `
@@ -246,8 +252,13 @@ read_nsg()
   if [ -n "$PCF_NSG" ]; then
       echo
       echo -e "NSG exists for $PCF_NSG"
-      yesno
-  else
+      local Y_N=`yesnodelete`
+      if [ $Y_N = 'd' ]; then
+        azure network nsg delete $RESOURCE_GROUP $PCF_NSG $LOCATION
+        PCF_NSG=""
+      fi
+  fi 
+  if [ -z "$PCF_NSG" ]; then
     PCF_NSG=$z
     create_nsg
   fi
@@ -265,8 +276,18 @@ read_vnet()
   if [ -n "$PCF_NET" ]; then
       echo
       echo -e "VNET exists for $PCF_NET"
-      yesno
-  else
+      local Y_N=`yesnodelete`
+      if [ $Y_N = 'd' ]; then
+        azure network vnet delete $RESOURCE_GROUP $PCF_NET
+        PCF_NET=""
+      else
+          read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
+          if [ -z $PCF_SUBNET ]; then
+             PCF_SUBNET="pcf"
+          fi         
+      fi
+  fi 
+  if [ -z "$PCF_NET" ]; then
     PCF_NET=$z
     create_vnet
   fi
@@ -275,28 +296,31 @@ read_vnet()
 
 read_storage()
 {
-  read -p "Enter Storage Account Name: (Press ENTER for pcfsan): " STORAGE_NAME
-  if [ -z $STORAGE_NAME ]; then
-      STORAGE_NAME="pcfsan"
-  fi
+  while [ -z $STORAGE_NAME ]; do
+    read -p "Enter Storage Account Name: " STORAGE_NAME
+  done
 
   CONNECTIONSTRING=`azure storage account connectionstring show $STORAGE_NAME  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`   
 
   if [ -n "$CONNECTIONSTRING" ]; then
       echo
       echo "Storage exists for $STORAGE_NAME"
-      yesno
-  else
+      local Y_N=`yesnodelete`
+      if [ $Y_N = 'd' ]; then
+        azure storage account delete $STORAGE_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTIONID
+        CONNECTIONSTRING=""
+      fi
+  fi 
+  if [ -z "$CONNECTIONSTRING" ]; then
     create_storage
   fi
 }
 
 read_xtrastorage()
 {
-    read -p "Enter Extra Storage Account Name: (Press ENTER for xtrapcfsan): " XTRA_STORAGE_NAME
-    if [ -z $XTRA_STORAGE_NAME ]; then
-       XTRA_STORAGE_NAME="xtrapcfsan"
-    fi 
+    while [ -z $XTRA_STORAGE_NAME ]; do
+      read -p "Enter Extra Storage Account Name: " XTRA_STORAGE_NAME
+    done 
 
     local loop=1
     while [ $loop -le 3 ]
@@ -305,9 +329,14 @@ read_xtrastorage()
       if [ -n "$CONNECTIONSTRING" ]; then
         echo
         echo -e "Storage exists for $XTRA_STORAGE_NAME$loop"
-        yesno
-      else
-       create_storage
+        local Y_N=`yesnodelete`
+        if [ $Y_N = 'd' ]; then
+          azure storage account delete $XTRA_STORAGE_NAME --resource-group $RESOURCE_GROUP --subscription $SUBSCRIPTIONID
+          CONNECTIONSTRING=""
+        fi
+      fi 
+      if [ -z "$CONNECTIONSTRING" ]; then
+       create_xtra_storage
       fi 
       #Increment the loop
       loop=$((loop + 1)) 
@@ -330,8 +359,20 @@ read_lb()
   if [ -n "$PCF_LB" ]; then
       echo
       echo "Load Balancer exists for $PCF_LB"
-      yesno
-  else
+      local Y_N=`yesnodelete`
+
+      if [ $Y_N = 'd' ]; then
+        azure network lb delete $RESOURCE_GROUP $PCF_LB $LOCATION
+        PCF_LB=""
+      else
+        read -p "Enter Public IP name associated with this load balancer: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
+        if [ -z $PCF_LB_IP ]; then
+          PCF_LB_IP="pcf-lb-ip"
+        fi 
+        PUBLIC_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
+      fi
+  fi 
+  if [ -z "$PCF_LB" ]; then
     PCF_LB=$z
     create_lb
   fi
@@ -340,7 +381,7 @@ read_lb()
 
 read_ssh_lb()
 {
-    read -p "Enter SSH LB Name: (Press ENTER for pcf-ss-lb): " PCF_SSH_LB
+    read -p "Enter SSH LB Name: (Press ENTER for pcf-ssh-lb): " PCF_SSH_LB
     if [ -z $PCF_SSH_LB ]; then
        PCF_SSH_LB="pcf-ssh-lb"
     fi    
@@ -351,8 +392,20 @@ read_ssh_lb()
   if [ -n "$PCF_SSH_LB" ]; then
       echo
       echo "Load Balancer exists for $PCF_SSH_LB"
-      yesno
-  else
+      local Y_N=`yesnodelete`
+      if [ $Y_N = 'd' ]; then
+        azure network lb delete $RESOURCE_GROUP $PCF_SSH_LB $LOCATION
+        PCF_SSH_LB=""
+      else
+        read -p "Enter Public IP name associated with this load balancer: (Press ENTER for pcf-ssh-lb-ip): " PCF_SSH_LB_IP
+        if [ -z $PCF_SSH_LB_IP ]; then
+          PCF_SSH_LB_IP="pcf-ssh-lb-ip"
+        fi 
+        PUBLIC_SSH_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_SSH_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
+
+      fi
+  fi 
+  if [ -z "$PCF_SSH_LB" ]; then
     PCF_SSH_LB=$z
     create_ssh_lb
   fi
@@ -368,7 +421,7 @@ read_inputs_create_resources()
     echo -e "\033[1;34m Using ResourceGroup: $RESOURCE_GROUP \033[0m"
 
     read_service_principal  
-    echo -e "\033[1;34m Using ResourceGroup: $RESOURCE_GROUP \033[0m"
+    echo -e "\033[1;34m Using Service Principal: $IDURIS \033[0m"
 
     read_nsg  
     echo -e "\033[1;34m Using NSG: $PCF_NSG \033[0m"
@@ -530,6 +583,29 @@ create_ssh_lb()
 
 }
 
+generate_bosh_yml()
+{
+    read -p "Enter an IP for BOSH Director VM: (Press ENTER for 10.0.0.10): " BOSH_IP
+    if [ -z $BOSH_IP ]; then
+       BOSH_IP="10.0.0.10"
+    fi 
+  `echo s/__DISK_SIZE__/50000/g >bosh.txt`
+  `echo s/__PCF_NET__/$PCF_NET/g >>bosh.txt`
+  `echo s/__PCF_SUBNET__/$PCF_SUBNET/g >>bosh.txt`
+  `echo s/__BOSH_IP__/$BOSH_IP/g >>bosh.txt`
+  `echo s/__ENVIRONMENT__/$ENVIRONMENT/g >>bosh.txt`
+  `echo s/__SUBSCRIPTION_ID__/$SUBSCRIPTIONID/g >>bosh.txt`
+  `echo s/__TENANTID__/$TENANTID/g >>bosh.txt`
+  `echo s/__CLIENTID__/$CLIENTID/g >>bosh.txt`
+  `echo s/__CLIENTSECRET__/$CLIENTSECRET/g >>bosh.txt`
+  `echo s/__RESOURCE_GROUP__/$RESOURCE_GROUP/g >>bosh.txt`
+  `echo s/__STORAGE_NAME__/$STORAGE_NAME/g >>bosh.txt`
+  `echo s/__PCF_NSG__/$PCF_NSG/g >>bosh.txt`
+
+  `sed -f bosh.txt < ../templates/bosh.cnf > bosh.yml`
+
+}
+
 # -------------------------------------------------------------------------------------------------------
 # Main Program 
 # -------------------------------------------------------------------------------------------------------
@@ -571,10 +647,16 @@ azure account set $SUBSCRIPTIONID
 
 read_inputs_create_resources
 
+generate_bosh_yml
+
 echo_inputs
+
 echo_tofile
 
-spinner
+echo -e "\033[1;92m Script ran successfully your environment has been created!!! \033[0m" 
+echo -e "\033[1;92m Now create a Jumpbox \033[0m" 
+
+#spinner
 
 
 
