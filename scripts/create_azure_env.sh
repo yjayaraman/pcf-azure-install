@@ -169,11 +169,11 @@ read_location()
 {
     while [ -z $LOCATION ]; do
       echo
-      azure location list | awk -F '[ ][ ]+' '{ print $2 }'
+      azure location list | grep Location | awk -F ':' '{ print $3 }' | tr -d ' '
       echo
       read -p "Enter the location from the list above: " LOCATION 
       if [ -n "$LOCATION" ]; then
-        LOCATION=`azure location list | grep -w " $LOCATION " | awk -F '[ ][ ]+' '{ print $2 }' ` 
+        LOCATION=`azure location list | grep -w $LOCATION | awk -F ':' '{ print $3 }' | tr -d ' ' ` 
         echo -e "Using location: $LOCATION" 
       fi
 
@@ -232,11 +232,11 @@ read_service_principal()
       if [ -z "$CLIENTID" ]; then
         create_service_principal
       fi       
-      local TEMPSTR=`azure login --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT | grep "login command OK" `
-      if [ -z "$TEMPSTR" ]; then
-          error "Unable to login using --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT "
-          CLIENTID=""
-      fi
+#      local TEMPSTR=`azure login --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT | grep "login command OK" `
+#      if [ -z "$TEMPSTR" ]; then
+#          error "Unable to login using --username  $CLIENTID  --password $CLIENTSECRET --service-principal --tenant $TENANTID —environment $ENVIRONMENT "
+#          CLIENTID=""
+#      fi
 
     done
 }
