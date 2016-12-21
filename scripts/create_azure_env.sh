@@ -156,11 +156,11 @@ read_subscription_id()
 {
   while [ -z $SUBSCRIPTIONID ]; do
       echo
-      azure account list | grep -w "Enabled" | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'
+      azure account list | grep -w "Enabled" | awk -F '[[ ]][[ ]]+' '{ print $3 }'
       echo 
       read -p "Enter SUBSCRIPTIONID from the list above : " SUBSCRIPTIONID
       if [ -n "$SUBSCRIPTIONID" ]; then
-        SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled"  | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'  `
+        SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled"  | awk -F '[[ ]][[ ]]+' '{ print $3 }'  `
       fi
   done
 }
@@ -169,11 +169,11 @@ read_location()
 {
     while [ -z $LOCATION ]; do
       echo
-      azure location list | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'
+      azure location list | awk -F '[[ ]][[ ]]+' '{ print $2 }'
       echo
       read -p "Enter the location from the list above: " LOCATION 
       if [ -n "$LOCATION" ]; then
-        LOCATION=`azure location list | grep -w " $LOCATION " | awk -F '[[:space:]][[:space:]]+' '{ print $2 }' ` 
+        LOCATION=`azure location list | grep -w " $LOCATION " | awk -F '[[ ]][[ ]]+' '{ print $2 }' ` 
         echo -e "Using location: $LOCATION" 
       fi
 
@@ -183,11 +183,11 @@ read_resource_group()
 {
     while [ -z $RESOURCE_GROUP ]; do
       echo
-      azure group list | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'
+      azure group list | awk -F '[[ ]][[ ]]+' '{ print $2 }'
       echo
       read -p "Enter the Resource Group from the list above: " RESOURCE_GROUP 
       if [ -n "$RESOURCE_GROUP" ]; then
-        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'  `
+        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[[ ]][[ ]]+' '{ print $2 }'  `
         echo -e "Using resource group: $RESOURCE_GROUP"
       fi
     done
@@ -196,11 +196,11 @@ read_nsg()
 {
     while [ -z $RESOURCE_GROUP ]; do
       echo
-      azure group list | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'
+      azure group list | awk -F '[[ ]][[ ]]+' '{ print $2 }'
       echo
       read -p "Enter the Resource Group from the list above: " RESOURCE_GROUP 
       if [ -n "$RESOURCE_GROUP" ]; then
-        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'  `
+        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[[ ]][[ ]]+' '{ print $2 }'  `
         echo -e "Using resource group: $RESOURCE_GROUP"
       fi
     done
@@ -248,7 +248,7 @@ read_nsg()
        PCF_NSG="pcf-nsg"
   fi
   local z=$PCF_NSG
-  PCF_NSG=`azure network nsg list | grep -w $PCF_NSG |  grep -w $LOCATION | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'`
+  PCF_NSG=`azure network nsg list | grep -w $PCF_NSG |  grep -w $LOCATION | awk -F '[[ ]][[ ]]+' '{ print $2 }'`
   if [ -n "$PCF_NSG" ]; then
       echo
       echo -e "NSG exists for $PCF_NSG"
@@ -272,7 +272,7 @@ read_vnet()
       PCF_NET="pcf-net"
   fi 
   local z=$PCF_NET
-  PCF_NET=`azure network vnet list | grep -w $PCF_NET |  grep -w $LOCATION | awk -F '[[:space:]][[:space:]]+' '{ print $2 }'`
+  PCF_NET=`azure network vnet list | grep -w $PCF_NET |  grep -w $LOCATION | awk -F '[[ ]][[ ]]+' '{ print $2 }'`
   if [ -n "$PCF_NET" ]; then
       echo
       echo -e "VNET exists for $PCF_NET"
@@ -301,7 +301,7 @@ read_storage()
   done
   local z=$STORAGE_NAME
   #CONNECTIONSTRING=`azure storage account connectionstring show $STORAGE_NAME  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`   
-  STORAGE_NAME=`azure storage account list | grep -w $STORAGE_NAME |  awk -F '[[:space:]][[:space:]]+' '{ print $2}'`
+  STORAGE_NAME=`azure storage account list | grep -w $STORAGE_NAME |  awk -F '[[ ]][[ ]]+' '{ print $2}'`
 
   if [ -n "$STORAGE_NAME" ]; then
       echo
@@ -327,7 +327,7 @@ read_xtrastorage()
     local loop=1
     while [ $loop -le 3 ]
     do
-      XTRA_STORAGE_NAME=`azure storage account list | grep -w $XTRA_STORAGE_NAME$loop |  awk -F '[[:space:]][[:space:]]+' '{ print $2}'`  
+      XTRA_STORAGE_NAME=`azure storage account list | grep -w $XTRA_STORAGE_NAME$loop |  awk -F '[[ ]][[ ]]+' '{ print $2}'`  
       if [ -n "$XTRA_STORAGE_NAME" ]; then
         echo
         echo -e "Storage exists for $XTRA_STORAGE_NAME"
@@ -359,7 +359,7 @@ read_lb()
 
  
   local z=$PCF_LB
-  PCF_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_LB | awk -F '[[:space:]][[:space:]]+' '{ print $2}'`
+  PCF_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_LB | awk -F '[[ ]][[ ]]+' '{ print $2}'`
   if [ -n "$PCF_LB" ]; then
       echo
       echo "Load Balancer exists for $PCF_LB"
@@ -392,7 +392,7 @@ read_ssh_lb()
 
  
   local z=$PCF_SSH_LB
-  PCF_SSH_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_SSH_LB | awk -F '[[:space:]][[:space:]]+' '{ print $2}'`
+  PCF_SSH_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_SSH_LB | awk -F '[[ ]][[ ]]+' '{ print $2}'`
   if [ -n "$PCF_SSH_LB" ]; then
       echo
       echo "Load Balancer exists for $PCF_SSH_LB"
@@ -586,6 +586,11 @@ generate_bosh_yml()
     if [ -z $BOSH_IP ]; then
        BOSH_IP="10.0.0.10"
     fi 
+
+    ssh-keygen -t rsa -f temp/bosh -P "" -C ""
+    BOSH_PUB_CERT=$(<temp/bosh.pub)
+
+    echo "$BOSH_PUB_CERT"
   `echo s/__DISK_SIZE__/50000/g >temp/bosh.txt`
   `echo s/__PCF_NET__/$PCF_NET/g >>temp/bosh.txt`
   `echo s/__PCF_SUBNET__/$PCF_SUBNET/g >>temp/bosh.txt`
@@ -598,14 +603,24 @@ generate_bosh_yml()
   `echo s/__RESOURCE_GROUP__/$RESOURCE_GROUP/g >>temp/bosh.txt`
   `echo s/__STORAGE_NAME__/$STORAGE_NAME/g >>temp/bosh.txt`
   `echo s/__PCF_NSG__/$PCF_NSG/g >>temp/bosh.txt`
+  `echo s/__XTRA_STORAGE_NAME__/$XTRA_STORAGE_NAME/g >>temp/bosh.txt`
+  `echo s/__PCF_LB__/$PCF_LB/g >>temp/bosh.txt`
+  `echo s/__PCF_SSH_LB__/$PCF_SSH_LB/g >>temp/bosh.txt`
+  `echo "s/__BOSH_PUB_CERT__/$(<temp/bosh.pub sed | tr -d ' ')/g">>temp/bosh.txt`
+  #`echo s/__BOSH_PUB_CERT__/$BOSH_PUB_CERT/g >>temp/bosh.txt`
 
   `sed -f bosh.txt < ../templates/bosh.cnf > temp/bosh.yml`
+  `sed -f bosh.txt < ../templates/cloud_config.cnf > temp/cloud_config.yml`
+  `sed -f bosh.txt < ../templates/cf.cnf > temp/cf.yml`
 
 }
 
 # -------------------------------------------------------------------------------------------------------
 # Main Program 
 # -------------------------------------------------------------------------------------------------------
+
+SKIPLOGIN=$1
+
 usage
 
 mkdir -p temp
@@ -625,7 +640,10 @@ echo "will spin here until login completes"
 # start with http://aka.ms/devicelogin
 # will spin here until login completes
 # disable login during testing --- 
-azure login   --environment $ENVIRONMENT
+
+if [ -z $SKIPLOGIN ]; then
+  azure login   --environment $ENVIRONMENT
+fi
  
 
 
