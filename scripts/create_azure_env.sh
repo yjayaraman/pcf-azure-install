@@ -625,7 +625,7 @@ echo "will spin here until login completes"
 # start with http://aka.ms/devicelogin
 # will spin here until login completes
 # disable login during testing --- 
-# azure login   --environment $ENVIRONMENT
+azure login   --environment $ENVIRONMENT
  
 
 
