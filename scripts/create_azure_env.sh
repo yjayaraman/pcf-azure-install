@@ -35,6 +35,7 @@ spinner()
 
 yesnodelete()
 {
+
   local Y_N
   while [ -z $Y_N ]
   do
@@ -50,12 +51,11 @@ yesnodelete()
                   ;;
                
               n)
-                  exit
+                  echo $Y_N
                   ;;
                
               *)
                   Y_N=""
-                  echo $Y_N
        
       esac
   done
@@ -64,7 +64,7 @@ yesnodelete()
 echo_tofile()
 {
 
-  FILENAME="create_azure_gov.txt"
+  local FILENAME="temp/create_azure.txt"
   # Opening file descriptors # 3 for reading and writing
   # i.e. /tmp/out.txt
   exec 3<>$FILENAME
@@ -156,11 +156,11 @@ read_subscription_id()
 {
   while [ -z $SUBSCRIPTIONID ]; do
       echo
-      azure account list | grep -w "Enabled" | grep -w "true" | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'
+      azure account list | grep -w "Enabled" | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'
       echo 
       read -p "Enter SUBSCRIPTIONID from the list above : " SUBSCRIPTIONID
       if [ -n "$SUBSCRIPTIONID" ]; then
-        SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled" | grep -w "true" | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'  `
+        SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled"  | awk -F '[[:space:]][[:space:]]+' '{ print $3 }'  `
       fi
   done
 }
@@ -586,20 +586,20 @@ generate_bosh_yml()
     if [ -z $BOSH_IP ]; then
        BOSH_IP="10.0.0.10"
     fi 
-  `echo s/__DISK_SIZE__/50000/g >bosh.txt`
-  `echo s/__PCF_NET__/$PCF_NET/g >>bosh.txt`
-  `echo s/__PCF_SUBNET__/$PCF_SUBNET/g >>bosh.txt`
-  `echo s/__BOSH_IP__/$BOSH_IP/g >>bosh.txt`
-  `echo s/__ENVIRONMENT__/$ENVIRONMENT/g >>bosh.txt`
-  `echo s/__SUBSCRIPTION_ID__/$SUBSCRIPTIONID/g >>bosh.txt`
-  `echo s/__TENANTID__/$TENANTID/g >>bosh.txt`
-  `echo s/__CLIENTID__/$CLIENTID/g >>bosh.txt`
-  `echo s/__CLIENTSECRET__/$CLIENTSECRET/g >>bosh.txt`
-  `echo s/__RESOURCE_GROUP__/$RESOURCE_GROUP/g >>bosh.txt`
-  `echo s/__STORAGE_NAME__/$STORAGE_NAME/g >>bosh.txt`
-  `echo s/__PCF_NSG__/$PCF_NSG/g >>bosh.txt`
+  `echo s/__DISK_SIZE__/50000/g >temp/bosh.txt`
+  `echo s/__PCF_NET__/$PCF_NET/g >>temp/bosh.txt`
+  `echo s/__PCF_SUBNET__/$PCF_SUBNET/g >>temp/bosh.txt`
+  `echo s/__BOSH_IP__/$BOSH_IP/g >>temp/bosh.txt`
+  `echo s/__ENVIRONMENT__/$ENVIRONMENT/g >>temp/bosh.txt`
+  `echo s/__SUBSCRIPTION_ID__/$SUBSCRIPTIONID/g >>temp/bosh.txt`
+  `echo s/__TENANTID__/$TENANTID/g >>temp/bosh.txt`
+  `echo s/__CLIENTID__/$CLIENTID/g >>temp/bosh.txt`
+  `echo s/__CLIENTSECRET__/$CLIENTSECRET/g >>temp/bosh.txt`
+  `echo s/__RESOURCE_GROUP__/$RESOURCE_GROUP/g >>temp/bosh.txt`
+  `echo s/__STORAGE_NAME__/$STORAGE_NAME/g >>temp/bosh.txt`
+  `echo s/__PCF_NSG__/$PCF_NSG/g >>temp/bosh.txt`
 
-  `sed -f bosh.txt < ../templates/bosh.cnf > bosh.yml`
+  `sed -f bosh.txt < ../templates/bosh.cnf > temp/bosh.yml`
 
 }
 
@@ -607,6 +607,8 @@ generate_bosh_yml()
 # Main Program 
 # -------------------------------------------------------------------------------------------------------
 usage
+
+mkdir -p temp
 
 ENVIRONMENT="AzureUSGovernment"
 echo -e  "Environment Type: 1 - Azure, 2 - AzureUSGovernment"
