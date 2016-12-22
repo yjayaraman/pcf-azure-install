@@ -28,7 +28,7 @@ spinner()
     for i in "${spin[@]}"
     do
         echo -ne "\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b$i We are done!!!!"
-        sleep 0.1
+        tewm 0.1
     done
   done
 }
@@ -129,11 +129,19 @@ usage()
   echo -e "\033[1;92m #   2.  You need to have a valid 'SubscriptionID' \033[0m"
   echo -e "\033[1;92m #   3.  You need to have a valid 'ResourceGroup' created in the 'Location' of choice  \033[0m"
   echo	
+  echo -e "\033[1;92m Parameters: \033[0m"
+  echo -e "\033[1;92m --dry-run Skip creating any resources \033[0m"
+  echo -e "\033[1;92m --no-login Skip logging into Azure and re-use the existing login \033[0m"
 }
 
 create_service_principal() 
 {
   echo "Creating AD Application and Service Principal ..."
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    CLIENTID="dry-run"
+    return
+  fi
 
   # client-secret		CLIENT-SECRET
   #
@@ -144,9 +152,11 @@ create_service_principal()
 
   CLIENTID=`azure ad app create --name "$PCFBOSHNAME" --password "$CLIENTSECRET" --identifier-uris ""$IDURIS"" --home-page ""$HOMEPAGE"" | grep  "AppId:" | awk -F':' '{ print $3 } ' | tr -d ' '`  
    
+  sleep 10
 
   azure ad sp create --applicationId $CLIENTID  
  
+  sleep 10
 
   azure role assignment create --roleName "Contributor"  --spn "$SPNAME" --subscription $SUBSCRIPTIONID
 
@@ -270,6 +280,10 @@ read_vnet()
   read -p "Enter PCF VNET Name: (Press ENTER for pcf-net): " PCF_NET
   if [ -z $PCF_NET ]; then
       PCF_NET="pcf-net"
+  fi 
+  read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
+  if [ -z $PCF_SUBNET ]; then
+     PCF_SUBNET="pcf"
   fi 
   local z=$PCF_NET
   PCF_NET=`azure network vnet list | grep -w $PCF_NET |  grep -w $LOCATION | awk -F '[ ][ ]+' '{ print $2 }'`
@@ -463,17 +477,20 @@ fatal()
 
 create_nsg() 
 {
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    return
+  fi
     azure network nsg create $RESOURCE_GROUP $PCF_NSG $LOCATION 
     azure network nsg rule create $RESOURCE_GROUP $PCF_NSG internet-to-lb --protocol Tcp --priority 100 --destination-port-range '*'   
 }
 
 create_vnet()
 {
-  read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
-  if [ -z $PCF_SUBNET ]; then
-     PCF_SUBNET="pcf"
-  fi 
-
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    return
+  fi
   azure network vnet create $RESOURCE_GROUP $PCF_NET $LOCATION --address-prefixes 10.0.0.0/16   
   azure network vnet subnet create $RESOURCE_GROUP $PCF_NET $PCF_SUBNET --address-prefix 10.0.0.0/20   
 
@@ -481,6 +498,10 @@ create_vnet()
 
 create_storage()
 {
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    return
+  fi
    azure storage account create $STORAGE_NAME --resource-group $RESOURCE_GROUP --sku-name LRS --kind Storage --subscription $SUBSCRIPTIONID  --location $LOCATION   
 
    CONNECTIONSTRING=`azure storage account connectionstring show $STORAGE_NAME  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`   
@@ -501,6 +522,10 @@ create_storage()
 
 create_xtra_storage()
 {
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    return
+  fi
       azure storage account create $XTRA_STORAGE_NAME$1 --resource-group $RESOURCE_GROUP --sku-name LRS --kind Storage --subscription $SUBSCRIPTIONID  --location $LOCATION    
 
       CONNECTIONSTRING=`azure storage account connectionstring show $XTRA_STORAGE_NAME$1  --resource-group $RESOURCE_GROUP | grep connectionstring: | cut -f3 -d':' | tr -d " "`    
@@ -518,6 +543,10 @@ create_xtra_storage()
 
 create_lb()
 {
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    return
+  fi
     azure network lb create $RESOURCE_GROUP $PCF_LB $LOCATION    
 
     read -p "Enter Public IP Name: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
@@ -552,6 +581,10 @@ create_lb()
 
 create_ssh_lb()
 {
+  if [ -n "$DRYRUN" ]; then
+    echo "--dry-run is $DRYRUN skipping create"
+    return
+  fi  
     azure network lb create $RESOURCE_GROUP $PCF_SSH_LB $LOCATION    
 
     read -p "Enter Public IP Name: (Press ENTER for pcf-ssh-lb-ip): " PCF_SSH_LB_IP
@@ -580,6 +613,34 @@ create_ssh_lb()
 
 }
 
+create_sed_commands()
+{
+ 
+  local FILENAME="temp/bosh.txt"
+  # Opening file descriptors # 3 for reading and writing
+  # i.e. /tmp/out.txt
+  exec 3<>$FILENAME
+
+  # Write to file
+  echo s/__DISK_SIZE__/50000/g >&3
+  echo s/__PCF_NET__/$PCF_NET/g >&3
+  echo s/__PCF_SUBNET__/$PCF_SUBNET/g >&3
+  echo s/__BOSH_IP__/$BOSH_IP/g >&3
+  echo s/__ENVIRONMENT__/$ENVIRONMENT/g >&3
+  echo s/__SUBSCRIPTION_ID__/$SUBSCRIPTIONID/g >&3
+  echo s/__TENANTID__/$TENANTID/g >&3
+  echo s/__CLIENTID__/$CLIENTID/g >&3
+  echo s/__CLIENTSECRET__/$CLIENTSECRET/g >&3
+  echo s/__RESOURCE_GROUP__/$RESOURCE_GROUP/g >&3
+  echo s/__STORAGE_NAME__/$STORAGE_NAME/g >&3
+  echo s/__PCF_NSG__/$PCF_NSG/g >&3
+  echo s/__XTRA_STORAGE_NAME__/$XTRA_STORAGE_NAME/g >&3
+  echo s/__PCF_LB__/$PCF_LB/g >&3
+  echo s/__PCF_SSH_LB__/$PCF_SSH_LB/g >&3
+
+  # close fd # 3
+  exec 3>&-
+}
 generate_bosh_yml()
 {
     read -p "Enter an IP for BOSH Director VM: (Press ENTER for 10.0.0.10): " BOSH_IP
@@ -587,31 +648,16 @@ generate_bosh_yml()
        BOSH_IP="10.0.0.10"
     fi 
 
+    create_sed_commands
+
+  sed -f temp/bosh.txt<../templates/bosh.cnf > temp/bosh.tmp
+  sed -f temp/bosh.txt < ../templates/cloud_config.cnf > temp/cloud_config.yml
+  sed -f temp/bosh.txt < ../templates/cf.cnf > temp/cf.yml
+
     ssh-keygen -t rsa -f temp/bosh -P "" -C ""
     BOSH_PUB_CERT=$(<temp/bosh.pub)
-
-    echo "$BOSH_PUB_CERT"
-  `echo s/__DISK_SIZE__/50000/g >temp/bosh.txt`
-  `echo s/__PCF_NET__/$PCF_NET/g >>temp/bosh.txt`
-  `echo s/__PCF_SUBNET__/$PCF_SUBNET/g >>temp/bosh.txt`
-  `echo s/__BOSH_IP__/$BOSH_IP/g >>temp/bosh.txt`
-  `echo s/__ENVIRONMENT__/$ENVIRONMENT/g >>temp/bosh.txt`
-  `echo s/__SUBSCRIPTION_ID__/$SUBSCRIPTIONID/g >>temp/bosh.txt`
-  `echo s/__TENANTID__/$TENANTID/g >>temp/bosh.txt`
-  `echo s/__CLIENTID__/$CLIENTID/g >>temp/bosh.txt`
-  `echo s/__CLIENTSECRET__/$CLIENTSECRET/g >>temp/bosh.txt`
-  `echo s/__RESOURCE_GROUP__/$RESOURCE_GROUP/g >>temp/bosh.txt`
-  `echo s/__STORAGE_NAME__/$STORAGE_NAME/g >>temp/bosh.txt`
-  `echo s/__PCF_NSG__/$PCF_NSG/g >>temp/bosh.txt`
-  `echo s/__XTRA_STORAGE_NAME__/$XTRA_STORAGE_NAME/g >>temp/bosh.txt`
-  `echo s/__PCF_LB__/$PCF_LB/g >>temp/bosh.txt`
-  `echo s/__PCF_SSH_LB__/$PCF_SSH_LB/g >>temp/bosh.txt`
-  `echo "s/__BOSH_PUB_CERT__/$(<temp/bosh.pub sed | tr -d ' ')/g">>temp/bosh.txt`
-  #`echo s/__BOSH_PUB_CERT__/$BOSH_PUB_CERT/g >>temp/bosh.txt`
-
-  `sed -f bosh.txt < ../templates/bosh.cnf > temp/bosh.yml`
-  `sed -f bosh.txt < ../templates/cloud_config.cnf > temp/cloud_config.yml`
-  `sed -f bosh.txt < ../templates/cf.cnf > temp/cf.yml`
+    echo "Public cert is $BOSH_PUB_CERT"
+    awk -v var="$BOSH_PUB_CERT" '{ sub(/__BOSH_PUB_CERT__/, var, $0) }1' temp/bosh.tmp >temp/bosh.yml  
 
 }
 
@@ -619,11 +665,59 @@ generate_bosh_yml()
 # Main Program 
 # -------------------------------------------------------------------------------------------------------
 
-SKIPLOGIN=$1
+while [[ $# -gt 0 ]]
+do
+key="$1"
+echo "Parameter: $key"
+case $key in
+    -s|--skip-login)
+        SKIPLOGIN=true
+        #shift # past argument
+        ;;
+    -n|--dry-run)
+        DRYRUN=true
+        #shift # past argument
+        ;;
+    -t|--test)
+        TESTRUN=true
+        #shift # past argument
+        ;;
+    *)
+            # unknown option
+    ;;
+esac
+shift # past argument or value
+done
 
 usage
 
 mkdir -p temp
+
+if [ -n $TESTRUN ]; then
+   ENVIRONMENT=AzureUSGovernment  
+   SUBSCRIPTIONID=a019ce4c-2477-46e5-827a-353b099913f5  
+   TENANTID=b972ffb6-1ec1-4252-9645-dd27243326c5  
+   IDURIS=http://yjpcf 
+   HOMEPAGE=http://yjpcf  
+   PCFBOSHNAME=yjpcf  
+   CLIENTID=dry-run  
+   CLIENTSECRET=keepitsimple  
+   RESOURCE_GROUP=yj-rg  
+   LOCATION=usgoviowa  
+   PCF_NET=yj-net  
+   PCF_NSG=yj-nsg  
+   STORAGE_NAME=yjs  
+   XTRA_STORAGE_NAME=xyjs 
+   PCF_LB=yj-l  
+   PCF_SSH_LB=yj-s-l 
+   PUBLIC_IP="13.72.184.195" 
+   PCF_SSH_LB=pcf-ssh-lb 
+   PUBLIC_SSH_IP="13.72.190.99"
+   generate_bosh_yml
+   echo_inputs
+   echo_tofile
+   exit
+fi
 
 ENVIRONMENT="AzureUSGovernment"
 echo -e  "Environment Type: 1 - Azure, 2 - AzureUSGovernment"
@@ -641,7 +735,7 @@ echo "will spin here until login completes"
 # will spin here until login completes
 # disable login during testing --- 
 
-if [ -z $SKIPLOGIN ]; then
+if [ -z "$SKIPLOGIN" ]; then
   azure login   --environment $ENVIRONMENT
 fi
  
