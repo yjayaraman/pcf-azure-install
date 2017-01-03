@@ -131,7 +131,7 @@ usage()
   echo	
   echo -e "\033[1;92m Parameters: \033[0m"
   echo -e "\033[1;92m --dry-run Skip creating any resources \033[0m"
-  echo -e "\033[1;92m --no-login Skip logging into Azure and re-use the existing login \033[0m"
+  echo -e "\033[1;92m --skip-login Skip logging into Azure and re-use the existing login \033[0m"
 }
 
 create_service_principal() 
@@ -661,6 +661,44 @@ generate_bosh_yml()
 
 }
 
+echo_next_steps()
+{
+echo -e "\033[1;92m Script ran successfully your environment has been created!!! \033[0m" 
+echo
+echo -e "\033[1;92m This script created all the required Azure resources and generated the following files in the temp directory: \033[0m" 
+echo -e "\033[1;34m 'bosh.yml'  \033[0m" 
+echo -e "\033[1;34m 'bosh'  \033[0m" 
+echo -e "\033[1;34m 'bosh.pub  \033[0m" 
+echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
+echo -e "\033[1;34m 'cf.yml'  \033[0m" 
+echo
+echo -e "\033[1;92m Use these files to modify the equivalent files in the jumpbox. \033[0m" 
+echo 
+echo -e "\033[1;92m Now create an Ubuntu 14 Jumpbox using Azure Portal \033[0m" 
+echo -e "\033[1;92m SSH on to the jumpbox \033[0m" 
+echo
+echo -e "\033[1;92m Run the following commands: \033[0m"
+echo -e "\033[1;34m sudo apt-get install git \033[0m" 
+echo -e "\033[1;34m git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git \033[0m" 
+echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"  
+echo -e "\033[1;34m sudo ./setupbosh.sh \033[0m" 
+echo -e "\033[1;34m ./download_artifacts.sh \033[0m"   
+echo -e "\033[1;34m cd ~/manifests/deployments \033[0m"  
+echo
+echo -e "\033[1;92m Copy the files generated to jumpbox under ~/manifests/deployments directory: \033[0m" 
+echo -e "\033[1;34m 'bosh.yml'  \033[0m" 
+echo -e "\033[1;34m 'bosh'  \033[0m" 
+echo -e "\033[1;34m 'bosh.pub  \033[0m" 
+echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
+echo -e "\033[1;34m 'cf.yml'  \033[0m"
+echo
+echo -e "\033[1;92m Run the following commands: \033[0m"
+echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"  
+echo -e "\033[1;34m ./deploy_bosh_director.sh \033[0m"   
+echo -e "\033[1;34m ./update_cloud_config.sh \033[0m"   
+echo -e "\033[1;34m ./deploy_pcf.sh \033[0m"   
+
+}
 # -------------------------------------------------------------------------------------------------------
 # Main Program 
 # -------------------------------------------------------------------------------------------------------
@@ -693,7 +731,9 @@ usage
 
 mkdir -p temp
 
-if [ -n $TESTRUN ]; then
+
+if [ -n "$TESTRUN" ]; then
+   echo "HERE"
    ENVIRONMENT=AzureUSGovernment  
    SUBSCRIPTIONID=a019ce4c-2477-46e5-827a-353b099913f5  
    TENANTID=b972ffb6-1ec1-4252-9645-dd27243326c5  
@@ -705,6 +745,7 @@ if [ -n $TESTRUN ]; then
    RESOURCE_GROUP=yj-rg  
    LOCATION=usgoviowa  
    PCF_NET=yj-net  
+   PCF_SUBNET=yj-subnet  
    PCF_NSG=yj-nsg  
    STORAGE_NAME=yjs  
    XTRA_STORAGE_NAME=xyjs 
@@ -716,6 +757,7 @@ if [ -n $TESTRUN ]; then
    generate_bosh_yml
    echo_inputs
    echo_tofile
+   echo_next_steps
    exit
 fi
 
@@ -766,13 +808,7 @@ echo_tofile
 
 #azure vm quick-create -v  --name pcf-jump-box --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --vm-size Standard_DS1 --admin-username ubuntu --admin-password K33pitsimp!e
 
-echo -e "\033[1;92m Script ran successfully your environment has been created!!! \033[0m" 
-echo -e "\033[1;92m Now create a Jumpbox \033[0m" 
-echo -e "\033[1;92m sftp the generated bosh.yml \033[0m" 
-echo -e "\033[1;92m On the jumpbox run sudo apt-get install git \033[0m" 
-echo -e "\033[1;92m git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git \033[0m" 
-echo -e "\033[1;92m cd pcf-azure-install\\scripts \033[0m" 
-echo -e "\033[1;92m run setupbosh.sh \033[0m" 
+echo_next_steps
 
 #spinner
 
