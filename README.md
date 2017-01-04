@@ -6,6 +6,9 @@
 2. Git
 3. Github account
 
+[NOTE]
+If you are running windows desktop, install virtualBox and Vagrant and create a Lucid64 box 
+
 
 ## Steps to setup Azure Env
 1. Using a browser log into your Azure portal
