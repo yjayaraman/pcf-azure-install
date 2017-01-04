@@ -116,7 +116,9 @@ echo_inputs()
   echo "*   PUBLIC_IP          :    $PUBLIC_IP " 
   echo "*   PCF_SSH_LB         :    $PCF_SSH_LB " 
   echo "*   PUBLIC_SSH_IP      :    $PUBLIC_SSH_IP "                                                                                    
+  echo "*   PREFIX             :    $PREFIX "                                                                              
   echo "*************************************************************************************"
+
 
 }
 
@@ -131,7 +133,9 @@ usage()
   echo	
   echo -e "\033[1;92m Parameters: \033[0m"
   echo -e "\033[1;92m --dry-run Skip creating any resources \033[0m"
+  echo -e "\033[1;92m --test Just generate the files based on defaults \033[0m"
   echo -e "\033[1;92m --skip-login Skip logging into Azure and re-use the existing login \033[0m"
+  echo -e "\033[1;92m --prefix <value> Enter a prefix for skipping inputs \033[0m"
 }
 
 create_service_principal() 
@@ -168,6 +172,7 @@ read_subscription_id()
       echo
       azure account list | grep -w "Enabled" | awk -F '[ ][ ]+' '{ print $3 }'
       echo 
+
       read -p "Enter SUBSCRIPTIONID from the list above : " SUBSCRIPTIONID
       if [ -n "$SUBSCRIPTIONID" ]; then
         SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled"  | awk -F '[ ][ ]+' '{ print $3 }'  `
@@ -202,24 +207,14 @@ read_resource_group()
       fi
     done
 }
-read_nsg()
-{
-    while [ -z $RESOURCE_GROUP ]; do
-      echo
-      azure group list | awk -F '[ ][ ]+' '{ print $2 }'
-      echo
-      read -p "Enter the Resource Group from the list above: " RESOURCE_GROUP 
-      if [ -n "$RESOURCE_GROUP" ]; then
-        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[ ][ ]+' '{ print $2 }'  `
-        echo -e "Using resource group: $RESOURCE_GROUP"
-      fi
-    done
-}
-
 read_service_principal()
 {
     while [ -z $CLIENTID ]; do
-      read -p "Enter Service Principal App URI: (Press ENTER for http://pcfbosh): " IDURIS
+      if [ -n "$PREFIX" ]; then
+        IDURIS=http://"$PREFIX"pcfbosh
+      else
+        read -p "Enter Service Principal App URI: (Press ENTER for http://pcfbosh): " IDURIS
+      fi    
       if [ -z $IDURIS ]; then
           IDURIS="http://pcfbosh"
       fi  
@@ -253,9 +248,13 @@ read_service_principal()
 
 read_nsg()
 {
-  read -p "Enter PCF Network Security Group Name: (Press ENTER for pcf-nsg): " PCF_NSG
+  if [ -n "$PREFIX" ]; then
+    PCF_NSG="$PREFIX"_NSG
+  else
+     read -p "Enter PCF Network Security Group Name: (Press ENTER for pcf-nsg): " PCF_NSG
+  fi
   if [ -z $PCF_NSG ]; then
-       PCF_NSG="pcf-nsg"
+      PCF_NSG="pcf-nsg"
   fi
   local z=$PCF_NSG
   PCF_NSG=`azure network nsg list | grep -w $PCF_NSG |  grep -w $LOCATION | awk -F '[ ][ ]+' '{ print $2 }'`
@@ -277,11 +276,21 @@ read_nsg()
 
 read_vnet()
 {
-  read -p "Enter PCF VNET Name: (Press ENTER for pcf-net): " PCF_NET
+  if [ -n "$PREFIX" ]; then
+    PCF_NET="$PREFIX"-net
+  else
+    read -p "Enter PCF VNET Name: (Press ENTER for pcf-net): " PCF_NET
+  fi
   if [ -z $PCF_NET ]; then
       PCF_NET="pcf-net"
   fi 
-  read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
+  
+  if [ -n "$PREFIX" ]; then
+    PCF_SUBNET="$PREFIX"
+  else
+    read -p "Enter PCF SUBNET Name: (Press ENTER for pcf): " PCF_SUBNET
+  fi
+
   if [ -z $PCF_SUBNET ]; then
      PCF_SUBNET="pcf"
   fi 
@@ -310,7 +319,11 @@ read_vnet()
 
 read_storage()
 {
-  while [ -z $STORAGE_NAME ]; do
+  if [ -n "$PREFIX" ]; then
+    STORAGE_NAME="$PREFIX"san
+  fi
+  
+while [ -z $STORAGE_NAME ]; do
     read -p "Enter Storage Account Name: " STORAGE_NAME
   done
   local z=$STORAGE_NAME
@@ -334,7 +347,10 @@ read_storage()
 
 read_xtrastorage()
 {
-    while [ -z $XTRA_STORAGE_NAME ]; do
+   if [ -n "$PREFIX" ]; then
+    XTRA_STORAGE_NAME=xtra"$PREFIX"san
+  fi
+     while [ -z $XTRA_STORAGE_NAME ]; do
       read -p "Enter Extra Storage Account Name: " XTRA_STORAGE_NAME
     done 
     local z=$XTRA_STORAGE_NAME
@@ -366,12 +382,34 @@ read_xtrastorage()
 
 read_lb()
 {
+  if [ -n "$PREFIX" ]; then
+    PCF_LB="$PREFIX"-lb
+  else 
     read -p "Enter LB Name: (Press ENTER for pcf-lb): " PCF_LB
+  fi
+
     if [ -z $PCF_LB ]; then
        PCF_LB="pcf-lb"
     fi    
 
- 
+    if [ -n "$PREFIX" ]; then
+      PCF_LB_IP="$PREFIX"-lb-ip
+    else 
+     read -p "Enter Public IP name associated with this load balancer: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
+    fi
+    if [ -z $PCF_LB_IP ]; then
+      PCF_LB_IP="pcf-lb-ip"
+    fi    
+
+    if [ -n "$PREFIX" ]; then
+      PCF_FE_IP="$PREFIX"-fe-ip
+    else 
+     read -p "Enter LB Frontend IP Name: (Press ENTER for pcf-fe-ip): " PCF_FE_IP
+    fi
+    if [ -z $PCF_FE_IP ]; then
+       PCF_FE_IP="pcf-fe-ip"
+    fi
+
   local z=$PCF_LB
   PCF_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_LB | awk -F '[ ][ ]+' '{ print $2}'`
   if [ -n "$PCF_LB" ]; then
@@ -383,10 +421,6 @@ read_lb()
         azure network lb delete $RESOURCE_GROUP $PCF_LB $LOCATION
         PCF_LB=""
       else
-        read -p "Enter Public IP name associated with this load balancer: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
-        if [ -z $PCF_LB_IP ]; then
-          PCF_LB_IP="pcf-lb-ip"
-        fi 
         PUBLIC_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
       fi
   fi 
@@ -399,12 +433,33 @@ read_lb()
 
 read_ssh_lb()
 {
-    read -p "Enter SSH LB Name: (Press ENTER for pcf-ssh-lb): " PCF_SSH_LB
+    if [ -n "$PREFIX" ]; then
+      PCF_SSH_LB="$PREFIX"-ssh-lb
+    else 
+      read -p "Enter SSH LB Name: (Press ENTER for pcf-ssh-lb): " PCF_SSH_LB
+    fi
     if [ -z $PCF_SSH_LB ]; then
        PCF_SSH_LB="pcf-ssh-lb"
     fi    
+    
+    if [ -n "$PREFIX" ]; then
+      PCF_SSH_LB_IP="$PREFIX"-ssh-lb-ip
+    else 
+       read -p "Enter Public IP name associated with this load balancer: (Press ENTER for pcf-ssh-lb-ip): " PCF_SSH_LB_IP
+    fi
+    if [ -z $PCF_SSH_LB_IP ]; then
+      PCF_SSH_LB_IP="pcf-ssh-lb-ip"
+    fi 
 
- 
+     if [ -n "$PREFIX" ]; then
+      PCF_SSH_FE_IP="$PREFIX"-ssh-fe-ip
+    else 
+     read -p "Enter SSH LB Frontend IP Name: (Press ENTER for pcf-ssh-fe-ip): " PCF_SSH_FE_IP
+    fi
+    if [ -z $PCF_SSH_FE_IP ]; then
+       PCF_SSH_FE_IP="pcf-ssh-fe-ip"
+    fi
+
   local z=$PCF_SSH_LB
   PCF_SSH_LB=`azure network lb list  $RESOURCE_GROUP | grep -w $PCF_SSH_LB | awk -F '[ ][ ]+' '{ print $2}'`
   if [ -n "$PCF_SSH_LB" ]; then
@@ -415,10 +470,6 @@ read_ssh_lb()
         azure network lb delete $RESOURCE_GROUP $PCF_SSH_LB $LOCATION
         PCF_SSH_LB=""
       else
-        read -p "Enter Public IP name associated with this load balancer: (Press ENTER for pcf-ssh-lb-ip): " PCF_SSH_LB_IP
-        if [ -z $PCF_SSH_LB_IP ]; then
-          PCF_SSH_LB_IP="pcf-ssh-lb-ip"
-        fi 
         PUBLIC_SSH_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_SSH_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
 
       fi
@@ -549,15 +600,7 @@ create_lb()
   fi
     azure network lb create $RESOURCE_GROUP $PCF_LB $LOCATION    
 
-    read -p "Enter Public IP Name: (Press ENTER for pcf-lb-ip): " PCF_LB_IP
-    if [ -z $PCF_LB_IP ]; then
-       PCF_LB_IP="pcf-lb-ip"
-    fi    
 
-    read -p "Enter LB Frontend IP Name: (Press ENTER for pcf-fe-ip): " PCF_FE_IP
-    if [ -z $PCF_FE_IP ]; then
-       PCF_FE_IP="pcf-fe-ip"
-    fi
 
     azure network public-ip create $RESOURCE_GROUP $PCF_LB_IP $LOCATION --allocation-method Static    
 
@@ -652,7 +695,7 @@ generate_bosh_yml()
 
   sed -f temp/bosh.txt<../templates/bosh.cnf > temp/bosh.tmp
   sed -f temp/bosh.txt < ../templates/cloud_config.cnf > temp/cloud_config.yml
-  sed -f temp/bosh.txt < ../templates/cf.cnf > temp/cf.yml
+  sed -f temp/bosh.txt < ../templates/cf.cnf > temp/cf.tmp
 
     ssh-keygen -t rsa -f temp/bosh -P "" -C ""
     BOSH_PUB_CERT=$(<temp/bosh.pub)
@@ -674,8 +717,19 @@ echo -e "\033[1;34m 'cf.yml'  \033[0m"
 echo
 echo -e "\033[1;92m Use these files to modify the equivalent files in the jumpbox. \033[0m" 
 echo 
+echo -e "\033[1;92m Next step is to create 'A' records in your DNS registry \033[0m" 
+echo -e "\033[1;34m Create an 'A' record in your DNS registry to point your <domain-name> to $PUBLIC_IP \033[0m" 
+echo -e "\033[1;34m Create an 'A' record in your DNS registry to point your ssh.<domain-name> to $PUBLIC_SSH_IP \033[0m" 
+echo
+echo 
 echo -e "\033[1;92m Now create an Ubuntu 14 Jumpbox using Azure Portal \033[0m" 
-echo -e "\033[1;92m SSH on to the jumpbox \033[0m" 
+echo
+echo -e "\033[1;92m sftp the files under temp directory to jumpbox under ~/manifests/deployments directory: \033[0m" 
+echo -e "\033[1;34m 'bosh.yml'  \033[0m" 
+echo -e "\033[1;34m 'bosh'  \033[0m" 
+echo -e "\033[1;34m 'bosh.pub  \033[0m" 
+echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
+echo -e "\033[1;34m 'cf.yml'  \033[0m"echo -e "\033[1;92m SSH on to the jumpbox \033[0m" 
 echo
 echo -e "\033[1;92m Run the following commands: \033[0m"
 echo -e "\033[1;34m sudo apt-get install git \033[0m" 
@@ -684,13 +738,7 @@ echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"
 echo -e "\033[1;34m sudo ./setupbosh.sh \033[0m" 
 echo -e "\033[1;34m ./download_artifacts.sh \033[0m"   
 echo -e "\033[1;34m cd ~/manifests/deployments \033[0m"  
-echo
-echo -e "\033[1;92m Copy the files generated to jumpbox under ~/manifests/deployments directory: \033[0m" 
-echo -e "\033[1;34m 'bosh.yml'  \033[0m" 
-echo -e "\033[1;34m 'bosh'  \033[0m" 
-echo -e "\033[1;34m 'bosh.pub  \033[0m" 
-echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
-echo -e "\033[1;34m 'cf.yml'  \033[0m"
+echo -e "\033[1;34m cp -R ~/tmp/*  ~/manifests/deployments/. \033[0m" 
 echo
 echo -e "\033[1;92m Run the following commands: \033[0m"
 echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"  
@@ -720,6 +768,10 @@ case $key in
         TESTRUN=true
         #shift # past argument
         ;;
+    -p|--prefix)
+        shift # past argument
+        PREFIX=$1
+        ;;
     *)
             # unknown option
     ;;
@@ -729,11 +781,13 @@ done
 
 usage
 
+
 mkdir -p temp
+
+rm -rf temp/*
 
 
 if [ -n "$TESTRUN" ]; then
-   echo "HERE"
    ENVIRONMENT=AzureUSGovernment  
    SUBSCRIPTIONID=a019ce4c-2477-46e5-827a-353b099913f5  
    TENANTID=b972ffb6-1ec1-4252-9645-dd27243326c5  
@@ -754,7 +808,7 @@ if [ -n "$TESTRUN" ]; then
    PUBLIC_IP="13.72.184.195" 
    PCF_SSH_LB=pcf-ssh-lb 
    PUBLIC_SSH_IP="13.72.190.99"
-   generate_bosh_yml
+   #generate_bosh_yml
    echo_inputs
    echo_tofile
    echo_next_steps
@@ -806,7 +860,7 @@ echo_inputs
 
 echo_tofile
 
-#azure vm quick-create -v  --name pcf-jump-box --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --vm-size Standard_DS1 --admin-username ubuntu --admin-password K33pitsimp!e
+#azure vm quick-create -v  --name pcf-jump-box --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --vm-size Standard_DS1 --admin-username ubuntu --admin-password K33pitsimple
 
 echo_next_steps
 

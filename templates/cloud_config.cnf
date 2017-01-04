@@ -1,0 +1,205 @@
+---
+azs:
+- name: 'null'
+  cloud_properties: {}
+networks:
+- name: default
+  type: manual
+  subnets:
+  - dns:
+    - 168.63.129.16
+    range: 10.0.0.0/20
+    gateway: 10.0.0.1
+    azs:
+    - 'null'
+    cloud_properties:
+      virtual_network_name: __PCF_NET__
+      subnet_name: __PCF_SUBNET__
+    reserved:
+    - 10.0.0.2-10.0.0.10
+    - 10.0.0.110-10.0.15.254
+    static:
+    - 10.0.0.15
+    - 10.0.0.16
+    - 10.0.0.17
+    - 10.0.0.18
+    - 10.0.0.19
+    - 10.0.0.20
+    - 10.0.0.23
+    - 10.0.0.24
+    - 10.0.0.25
+    - 10.0.0.29
+    - 10.0.0.59
+    - 10.0.0.60
+    - 10.0.0.61
+    - 10.0.0.62
+    - 10.0.0.63
+    - 10.0.0.64
+    - 10.0.0.65
+    - 10.0.0.66
+    - 10.0.0.67
+    - 10.0.0.78
+    - 10.0.0.79
+    - 10.0.0.80
+    - 10.0.0.81
+    - 10.0.0.88
+    - 10.0.0.89
+    - 10.0.0.90
+    - 10.0.0.91
+    - 10.0.0.92
+    - 10.0.0.93
+    - 10.0.0.94
+vm_types:
+- name: Standard_DS1_v2
+  cloud_properties:
+    instance_type: Standard_DS1
+    ephemeral_disk:
+      size: 51200
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS2_v2
+  cloud_properties:
+    instance_type: Standard_DS2
+    ephemeral_disk:
+      size: 102400
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS3_v2
+  cloud_properties:
+    instance_type: Standard_DS3
+    ephemeral_disk:
+      size: 204800
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS4_v2
+  cloud_properties:
+    instance_type: Standard_DS4
+    ephemeral_disk:
+      size: 409600
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS5_v2
+  cloud_properties:
+    instance_type: Standard_DS5
+    ephemeral_disk:
+      size: 819200
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS11_v2
+  cloud_properties:
+    instance_type: Standard_DS11
+    ephemeral_disk:
+      size: 102400
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS12_v2
+  cloud_properties:
+    instance_type: Standard_DS12
+    ephemeral_disk:
+      size: 204800
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS13_v2
+  cloud_properties:
+    instance_type: Standard_DS13
+    ephemeral_disk:
+      size: 409600
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_DS14_v2
+  cloud_properties:
+    instance_type: Standard_DS14
+    ephemeral_disk:
+      size: 819200
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_F1s
+  cloud_properties:
+    instance_type: Standard_F1
+    ephemeral_disk:
+      size: 16384
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_F2s
+  cloud_properties:
+    instance_type: Standard_F2
+    ephemeral_disk:
+      size: 32768
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_F4s
+  cloud_properties:
+    instance_type: Standard_F4
+    ephemeral_disk:
+      size: 65536
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+- name: Standard_F8s
+  cloud_properties:
+    instance_type: Standard_F8
+    ephemeral_disk:
+      size: 131072
+    storage_account_name: "*__XTRA_STORAGE_NAME__*"
+disk_types:
+- name: '1024'
+  disk_size: 1024
+  cloud_properties: {}
+- name: '2048'
+  disk_size: 2048
+  cloud_properties: {}
+- name: '5120'
+  disk_size: 5120
+  cloud_properties: {}
+- name: '10240'
+  disk_size: 10240
+  cloud_properties: {}
+- name: '20480'
+  disk_size: 20480
+  cloud_properties: {}
+- name: '30720'
+  disk_size: 30720
+  cloud_properties: {}
+- name: '51200'
+  disk_size: 51200
+  cloud_properties: {}
+- name: '76800'
+  disk_size: 76800
+  cloud_properties: {}
+- name: '102400'
+  disk_size: 102400
+  cloud_properties: {}
+- name: '153600'
+  disk_size: 153600
+  cloud_properties: {}
+- name: '204800'
+  disk_size: 204800
+  cloud_properties: {}
+- name: '307200'
+  disk_size: 307200
+  cloud_properties: {}
+- name: '512000'
+  disk_size: 512000
+  cloud_properties: {}
+- name: '768000'
+  disk_size: 768000
+  cloud_properties: {}
+- name: '1048576'
+  disk_size: 1048576
+  cloud_properties: {}
+- name: '2097152'
+  disk_size: 2097152
+  cloud_properties: {}
+- name: '5242880'
+  disk_size: 5242880
+  cloud_properties: {}
+- name: '10485760'
+  disk_size: 10485760
+  cloud_properties: {}
+- name: '16777216'
+  disk_size: 16777216
+  cloud_properties: {}
+compilation:
+  workers: 4
+  network: default
+  az: 'null'
+  reuse_compilation_vms: true
+  vm_type: Standard_F4s
+  vm_extensions: []
+  env:
+    bosh:
+      password: "$6$93RafHK1nTc9lN5$QZDJbek2KOg/b0/UPuBTilHCoJFcW48Bo9rmy2XGLC8SCJ7nVyHnAX9uwMNtLIPq1IiWxOVs3jSOnAHeRnZWJ."
+vm_extensions:
+- name: vm-extension-ha_proxy-35e9aca614fbad0b5c41
+  cloud_properties:
+    load_balancer: __PCF_LB__
+- name: vm-extension-diego_brain-3040a87618842ebf3999
+  cloud_properties:
+    load_balancer: __PCF_SSH_LB__
