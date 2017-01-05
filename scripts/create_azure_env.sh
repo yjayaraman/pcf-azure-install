@@ -128,6 +128,7 @@ usage()
   echo -e "\033[1;92m #   1.  Azure CLI is installed on this machine \033[0m"
   echo -e "\033[1;92m #   2.  You need to have a valid 'SubscriptionID' \033[0m"
   echo -e "\033[1;92m #   3.  You need to have a valid 'ResourceGroup' created in the 'Location' of choice  \033[0m"
+  echo -e "\033[1;92m #   4.  You need to enough quota to create VMs 'azure vm list-usage --location <location>'  \033[0m"
   echo	
   echo -e "\033[1;92m Parameters: \033[0m"
   echo -e "\033[1;92m --dry-run Skip creating any resources \033[0m"
