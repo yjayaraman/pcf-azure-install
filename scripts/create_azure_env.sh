@@ -563,7 +563,10 @@ create_vnet()
 
 create_jumpbox()
 {
-  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password K33pit%imple --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump pcf-jump
+    while [ -z $JUMPPASSWORD ]; do
+      read -p "Enter Jump Box Admin Password (At least 8 characters and must contain uppercase, lowercase, numbers, and special chars) : " JUMPPASSWORD
+  done
+  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password $JUMPPASSWORD --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump pcf-jump
 }
 
 create_storage()
@@ -889,7 +892,7 @@ read_inputs_create_resources
 
 generate_bosh_yml
 
-echo -e "\033[1;92m Copying files to the jumpbox. Enter K33pit%imple as password when prompted: \033[0m" 
+echo -e "\033[1;92m Copying files to the jumpbox. Enter $JUMPPASSWORD as password when prompted: \033[0m" 
 scp -r ../../pcf-azure-install ubuntu@13.72.184.195:.
 
 echo_inputs
