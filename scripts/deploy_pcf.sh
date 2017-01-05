@@ -99,7 +99,7 @@ if [ -z "$BOSH_UUID" ]; then
    fatal "Unable to login to BOSH director at 10.0.0.10"
 fi
 
-bosh -n update cloud-config ~/manifests/deployments/cloud_config.yml
+bosh -n update cloud-config temp/cloud_config.yml
 
 read -p "Enter the domain name you want to generate the SSL cert for:" DOMAIN_NAME
 

@@ -124,9 +124,7 @@ echo_inputs()
 
 usage() 
 {
-  echo
-  echo -e " #This script is 'opinionated' and makes the following assumptions:"
-  echo 
+  echo -e "\033[1;92m # This script is 'opinionated' and makes the following assumptions:" 
   echo -e "\033[1;92m #   1.  Azure CLI is installed on this machine \033[0m"
   echo -e "\033[1;92m #   2.  You need to have a valid 'SubscriptionID' \033[0m"
   echo -e "\033[1;92m #   3.  You need to have a valid 'ResourceGroup' created in the 'Location' of choice  \033[0m"
@@ -728,46 +726,25 @@ generate_bosh_yml()
 
 echo_next_steps()
 {
-echo -e "\033[1;92m Script ran successfully your environment has been created!!! \033[0m" 
 echo
-echo -e "\033[1;92m This script created all the required Azure resources and generated the following files in the temp directory: \033[0m" 
-echo -e "\033[1;34m 'bosh.yml'  \033[0m" 
-echo -e "\033[1;34m 'bosh'  \033[0m" 
-echo -e "\033[1;34m 'bosh.pub  \033[0m" 
-echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
-echo -e "\033[1;34m 'cf.yml'  \033[0m" 
+echo -e "\033[1;92m This script creates all the required Azure resources and generates config files needed for PCF install in the 'temp' directory: \033[0m" 
 echo
-echo -e "\033[1;92m Use these files to modify the equivalent files in the jumpbox. \033[0m" 
-echo 
 echo -e "\033[1;92m Next step is to create 'A' records in your DNS registry \033[0m" 
 echo -e "\033[1;34m Create an 'A' record in your DNS registry to point your <domain-name> to $PUBLIC_IP \033[0m" 
 echo -e "\033[1;34m Create an 'A' record in your DNS registry to point your ssh.<domain-name> to $PUBLIC_SSH_IP \033[0m" 
-echo
 echo 
-echo -e "\033[1;92m Now create an Ubuntu 14 Jumpbox using Azure Portal \033[0m" 
+echo -e "\033[1;92m The script also creates an Ubuntu 14 Jumpbox using Azure Portal \033[0m" 
+echo -e "\033[1;92m and copies the config files and scripts to the jumpbox under ~/pcf-azure-install directory  \033[0m" 
 echo
-echo -e "\033[1;92m sftp the files under temp directory to jumpbox under ~/manifests/deployments directory: \033[0m" 
-echo -e "\033[1;34m 'bosh.yml'  \033[0m" 
-echo -e "\033[1;34m 'bosh'  \033[0m" 
-echo -e "\033[1;34m 'bosh.pub  \033[0m" 
-echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
-echo -e "\033[1;34m 'cf.yml'  \033[0m"
-echo
-echo -e "\033[1;92m SSH on to the jumpbox \033[0m" 
+echo -e "\033[1;34m SSH on to the jumpbox \033[0m" 
 echo
 echo -e "\033[1;92m Run the following commands: \033[0m" 
 echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"  
 echo -e "\033[1;34m sudo ./setupbosh.sh \033[0m" 
 echo -e "\033[1;34m ./download_artifacts.sh \033[0m"   
-echo -e "\033[1;34m cd ~/manifests/deployments \033[0m"  
-echo -e "\033[1;34m cp -R ~/tmp/*  ~/manifests/deployments/. \033[0m" 
-echo
-echo -e "\033[1;92m Run the following commands: \033[0m"
-echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"  
 echo -e "\033[1;34m ./deploy_bosh_director.sh \033[0m"   
-echo -e "\033[1;34m ./update_cloud_config.sh \033[0m"   
 echo -e "\033[1;34m ./deploy_pcf.sh \033[0m"   
-
+echo 
 }
 
 
@@ -778,10 +755,13 @@ echo -e "\033[1;34m ./deploy_pcf.sh \033[0m"
 while [[ $# -gt 0 ]]
 do
 key="$1"
-echo "Parameter: $key"
 case $key in
     -s|--skip-login)
         SKIPLOGIN=true
+        #shift # past argument
+        ;;
+    -h|--help)
+        HELP=true
         #shift # past argument
         ;;
     -n|--dry-run)
@@ -822,6 +802,10 @@ mkdir -p temp
 
 rm -rf temp/*
 
+if [ -n "$HELP" ]; then
+     echo_next_steps
+     exit
+fi
 
 if [ -n "$TESTRUN" ]; then
    ENVIRONMENT=AzureUSGovernment  
