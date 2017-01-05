@@ -35,7 +35,7 @@ generate_cf_yml()
 {
     create_sed_commands
 
-    sed -f temp/cf.txt<~/manifests/deployments/cf.tmp > temp/cf1.yml
+    sed -f temp/cf.txt<temp/cf.tmp > temp/cf1.yml
 
     PUB_CERT=$(<temp/your-cert.pem)
     PRI_KEY=$(<temp/your-private-key.pem)
@@ -86,9 +86,9 @@ upload_artifacts()
 
 }
 
-mkdir -p temp
-
-rm -rf temp/*
+# -------------------------------------------------------------------------------------------------------
+# Main Program 
+# -------------------------------------------------------------------------------------------------------
 
 bosh -n  target 10.0.0.10
 

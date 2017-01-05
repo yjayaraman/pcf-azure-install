@@ -136,6 +136,9 @@ usage()
   echo -e "\033[1;92m --test Just generate the files based on defaults \033[0m"
   echo -e "\033[1;92m --skip-login Skip logging into Azure and re-use the existing login \033[0m"
   echo -e "\033[1;92m --prefix <value> Enter a prefix for skipping inputs \033[0m"
+  echo -e "\033[1;92m --subscription <value> Enter Azure SubscriptionID \033[0m"
+  echo -e "\033[1;92m --resource-group <value> Enter Azure Resource Group \033[0m"
+  echo -e "\033[1;92m --location <value> Enter Azure Location (e.g. usgoviowa) \033[0m"
 }
 
 create_service_principal() 
@@ -168,6 +171,9 @@ create_service_principal()
 
 read_subscription_id()
 {
+      if [ -n "$SUBSCRIPTIONID" ]; then
+        SUBSCRIPTIONID=`azure account list | grep -w $SUBSCRIPTIONID | grep -w "Enabled"  | awk -F '[ ][ ]+' '{ print $3 }'  `
+      fi
   while [ -z $SUBSCRIPTIONID ]; do
       echo
       azure account list | grep -w "Enabled" | awk -F '[ ][ ]+' '{ print $3 }'
@@ -182,6 +188,9 @@ read_subscription_id()
 
 read_location() 
 {
+    if [ -n "$LOCATION" ]; then
+        LOCATION=`azure location list | grep -w $LOCATION | awk -F ':' '{ print $3 }' | tr -d ' ' ` 
+    fi
     while [ -z $LOCATION ]; do
       echo
       azure location list | grep Location | awk -F ':' '{ print $3 }' | tr -d ' '
@@ -196,6 +205,9 @@ read_location()
 }
 read_resource_group()
 {
+    if [ -n "$RESOURCE_GROUP" ]; then
+        RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[ ][ ]+' '{ print $2 }'  ` 
+    fi
     while [ -z $RESOURCE_GROUP ]; do
       echo
       azure group list | awk -F '[ ][ ]+' '{ print $2 }'
@@ -249,7 +261,7 @@ read_service_principal()
 read_nsg()
 {
   if [ -n "$PREFIX" ]; then
-    PCF_NSG="$PREFIX"_NSG
+    PCF_NSG="$PREFIX"_nsg
   else
      read -p "Enter PCF Network Security Group Name: (Press ENTER for pcf-nsg): " PCF_NSG
   fi
@@ -499,6 +511,8 @@ read_inputs_create_resources()
     echo -e "\033[1;34m Using VNET: $PCF_NET \033[0m"
     echo -e "\033[1;34m Using SUBNET: $PCF_SUBNET \033[0m"
 
+    create_jumpbox
+
     read_storage
     echo -e "\033[1;34m Using Storage: $STORAGE_NAME \033[0m"
     
@@ -545,6 +559,11 @@ create_vnet()
   azure network vnet create $RESOURCE_GROUP $PCF_NET $LOCATION --address-prefixes 10.0.0.0/16   
   azure network vnet subnet create $RESOURCE_GROUP $PCF_NET $PCF_SUBNET --address-prefix 10.0.0.0/20   
 
+}
+
+create_jumpbox()
+{
+  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password K33pit%imple --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump pcf-jump
 }
 
 create_storage()
@@ -729,11 +748,11 @@ echo -e "\033[1;34m 'bosh.yml'  \033[0m"
 echo -e "\033[1;34m 'bosh'  \033[0m" 
 echo -e "\033[1;34m 'bosh.pub  \033[0m" 
 echo -e "\033[1;34m 'cloud_config.yml'  \033[0m" 
-echo -e "\033[1;34m 'cf.yml'  \033[0m"echo -e "\033[1;92m SSH on to the jumpbox \033[0m" 
+echo -e "\033[1;34m 'cf.yml'  \033[0m"
 echo
-echo -e "\033[1;92m Run the following commands: \033[0m"
-echo -e "\033[1;34m sudo apt-get install git \033[0m" 
-echo -e "\033[1;34m git clone https://github.com/yjayaraman-pivotal/pcf-azure-install.git \033[0m" 
+echo -e "\033[1;92m SSH on to the jumpbox \033[0m" 
+echo
+echo -e "\033[1;92m Run the following commands: \033[0m" 
 echo -e "\033[1;34m cd ~/pcf-azure-install/scripts \033[0m"  
 echo -e "\033[1;34m sudo ./setupbosh.sh \033[0m" 
 echo -e "\033[1;34m ./download_artifacts.sh \033[0m"   
@@ -747,6 +766,8 @@ echo -e "\033[1;34m ./update_cloud_config.sh \033[0m"
 echo -e "\033[1;34m ./deploy_pcf.sh \033[0m"   
 
 }
+
+
 # -------------------------------------------------------------------------------------------------------
 # Main Program 
 # -------------------------------------------------------------------------------------------------------
@@ -771,6 +792,18 @@ case $key in
     -p|--prefix)
         shift # past argument
         PREFIX=$1
+        ;;
+    -s|--subscription)
+        shift # past argument
+        SUBSCRIPTIONID=$1
+        ;;
+    -r|--resource-group)
+        shift # past argument
+        RESOURCE_GROUP=$1
+        ;;
+    -l|--location)
+        shift # past argument
+        LOCATION=$1
         ;;
     *)
             # unknown option
@@ -808,7 +841,7 @@ if [ -n "$TESTRUN" ]; then
    PUBLIC_IP="13.72.184.195" 
    PCF_SSH_LB=pcf-ssh-lb 
    PUBLIC_SSH_IP="13.72.190.99"
-   #generate_bosh_yml
+   generate_bosh_yml
    echo_inputs
    echo_tofile
    echo_next_steps
@@ -856,11 +889,12 @@ read_inputs_create_resources
 
 generate_bosh_yml
 
+echo -e "\033[1;92m Copying files to the jumpbox. Enter K33pit%imple as password when prompted: \033[0m" 
+scp -r ../../pcf-azure-install ubuntu@13.72.184.195:.
+
 echo_inputs
 
 echo_tofile
-
-#azure vm quick-create -v  --name pcf-jump-box --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --vm-size Standard_DS1 --admin-username ubuntu --admin-password K33pitsimple
 
 echo_next_steps
 
