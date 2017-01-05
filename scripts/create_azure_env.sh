@@ -141,7 +141,6 @@ usage()
 
 create_service_principal() 
 {
-  echo "Creating AD Application and Service Principal ..."
   if [ -n "$DRYRUN" ]; then
     echo "--dry-run is $DRYRUN skipping create"
     CLIENTID="dry-run"
@@ -187,7 +186,7 @@ read_subscription_id()
 read_location() 
 {
     if [ -n "$LOCATION" ]; then
-        LOCATION=`azure location list | grep -w $LOCATION | awk -F ':' '{ print $3 }' | tr -d ' ' ` 
+      LOCATION=`azure location list | grep -w $LOCATION | awk -F ':' '{ print $3 }' | tr -d ' ' ` 
     fi
     while [ -z $LOCATION ]; do
       echo
@@ -204,6 +203,10 @@ read_location()
 read_resource_group()
 {
     if [ -n "$RESOURCE_GROUP" ]; then
+        if [ -n "$DRYRUN" ]; then
+          echo "--dry-run is $DRYRUN skipping resource group check"
+          return
+        fi
         RESOURCE_GROUP=`azure group list | grep -w " $RESOURCE_GROUP " | awk -F '[ ][ ]+' '{ print $2 }'  ` 
     fi
     while [ -z $RESOURCE_GROUP ]; do
@@ -389,7 +392,6 @@ read_xtrastorage()
 
 }
 
-
 read_lb()
 {
   if [ -n "$PREFIX" ]; then
@@ -439,7 +441,6 @@ read_lb()
     create_lb
   fi
 }
-
 
 read_ssh_lb()
 {
@@ -494,34 +495,37 @@ read_inputs_create_resources()
 {
 
     read_location
-    echo -e "\033[1;34m Using location: $LOCATION \033[0m"
+#    echo -e "\033[1;34m Using location: $LOCATION \033[0m"
 
     read_resource_group
-    echo -e "\033[1;34m Using ResourceGroup: $RESOURCE_GROUP \033[0m"
+#    echo -e "\033[1;34m Using ResourceGroup: $RESOURCE_GROUP \033[0m"
 
+    echo -e "\033[1;34m Creating Service Principal \033[0m"
     read_service_principal  
-    echo -e "\033[1;34m Using Service Principal: $IDURIS \033[0m"
+#    echo -e "\033[1;34m Using Service Principal: $IDURIS \033[0m"
 
+    echo -e "\033[1;34m Creating Network Security Groups \033[0m"
     read_nsg  
-    echo -e "\033[1;34m Using NSG: $PCF_NSG \033[0m"
+#    echo -e "\033[1;34m Using NSG: $PCF_NSG \033[0m"
    
+    echo -e "\033[1;34m Creating VNETs \033[0m"
     read_vnet
-    echo -e "\033[1;34m Using VNET: $PCF_NET \033[0m"
-    echo -e "\033[1;34m Using SUBNET: $PCF_SUBNET \033[0m"
+#    echo -e "\033[1;34m Using VNET: $PCF_NET \033[0m"
+#    echo -e "\033[1;34m Using SUBNET: $PCF_SUBNET \033[0m"
 
     create_jumpbox
 
+    echo -e "\033[1;34m Creating Storage Accounts \033[0m"
     read_storage
-    echo -e "\033[1;34m Using Storage: $STORAGE_NAME \033[0m"
-    
+#    echo -e "\033[1;34m Using Storage: $STORAGE_NAME \033[0m"
     read_xtrastorage
-    echo -e "\033[1;34m Using Extra Storage: $XTRA_STORAGE_NAME \033[0m"
+#    echo -e "\033[1;34m Using Extra Storage: $XTRA_STORAGE_NAME \033[0m"
 
+    echo -e "\033[1;34m Creating Load Balancers \033[0m"
     read_lb
-    echo -e "\033[1;34m Using LB: $PCF_LB \033[0m"
-
+#    echo -e "\033[1;34m Using LB: $PCF_LB \033[0m"
     read_ssh_lb
-    echo -e "\033[1;34m Using SSH LB: $PCF_SSH_LB \033[0m"
+#    echo -e "\033[1;34m Using SSH LB: $PCF_SSH_LB \033[0m"
 
 }
 
@@ -561,7 +565,11 @@ create_vnet()
 
 create_jumpbox()
 {
-    while [ -z $JUMPPASSWORD ]; do
+  if [ -n "$DRYRUN" ]; then
+      echo "--dry-run is $DRYRUN skipping jumpbox create"
+      return
+  fi
+  while [ -z $JUMPPASSWORD ]; do
       read -p "Enter Jump Box Admin Password (At least 8 characters and must contain uppercase, lowercase, numbers, and special chars) : " JUMPPASSWORD
   done
   azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password $JUMPPASSWORD --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump pcf-jump
@@ -650,16 +658,6 @@ create_ssh_lb()
   fi  
     azure network lb create $RESOURCE_GROUP $PCF_SSH_LB $LOCATION    
 
-    read -p "Enter Public IP Name: (Press ENTER for pcf-ssh-lb-ip): " PCF_SSH_LB_IP
-    if [ -z $PCF_SSH_LB_IP ]; then
-       PCF_SSH_LB_IP="pcf-ssh-lb-ip"
-    fi    
-
-    read -p "Enter LB Frontend IP Name: (Press ENTER for pcf-ssh-fe-ip): " PCF_SSH_FE_IP
-    if [ -z $PCF_SSH_FE_IP ]; then
-       PCF_SSH_FE_IP="pcf-ssh-fe-ip"
-    fi
-
     azure network public-ip create $RESOURCE_GROUP $PCF_SSH_LB_IP $LOCATION --allocation-method Static    
 
     PUBLIC_SSH_IP=`azure network public-ip show $RESOURCE_GROUP $PCF_SSH_LB_IP | grep "IP Address" | cut -f3 -d":" | tr -d ' '`
@@ -706,10 +704,15 @@ create_sed_commands()
 }
 generate_bosh_yml()
 {
-    read -p "Enter an IP for BOSH Director VM: (Press ENTER for 10.0.0.10): " BOSH_IP
-    if [ -z $BOSH_IP ]; then
-       BOSH_IP="10.0.0.10"
-    fi 
+    echo -e "\033[1;34m Generating BOSH Director config \033[0m"
+
+    while [ -z $BOSH_IP ];
+    do
+      read -p "Enter an IP for BOSH Director VM: (Press ENTER for 10.0.0.10): " BOSH_IP
+      if [ -z $BOSH_IP ]; then
+        BOSH_IP="10.0.0.10"
+      fi 
+    done
 
     create_sed_commands
 
@@ -828,6 +831,10 @@ if [ -n "$TESTRUN" ]; then
    PUBLIC_IP="13.72.184.195" 
    PCF_SSH_LB=pcf-ssh-lb 
    PUBLIC_SSH_IP="13.72.190.99"
+   BOSH_IP="10.0.0.10"
+   DRYRUN=true
+   PREFIX="test"
+   read_inputs_create_resources
    generate_bosh_yml
    echo_inputs
    echo_tofile
@@ -876,8 +883,12 @@ read_inputs_create_resources
 
 generate_bosh_yml
 
-echo -e "\033[1;92m Copying files to the jumpbox. Enter $JUMPPASSWORD as password when prompted: \033[0m" 
-scp -r ../../pcf-azure-install ubuntu@13.72.184.195:.
+if [ -z "$DRYRUN" ]; then
+  echo -e "\033[1;92m Copying files to the jumpbox. Enter $JUMPPASSWORD as password when prompted: \033[0m" 
+  scp -r ../../pcf-azure-install ubuntu@13.72.184.195:.
+fi
+
+
 
 echo_inputs
 
