@@ -12,7 +12,7 @@ If you are running windows desktop, install virtualBox and Vagrant and create a 
 ## Usage
 ./create-azure-env.sh <Parameters>
  
- Parameters:
+ Optional Parameters:
  - --help Display these options
  - --dry-run Skip creating any resources
  - --test Just generate the files based on defaults
