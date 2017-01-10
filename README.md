@@ -11,14 +11,15 @@ If you are running windows desktop, install virtualBox and Vagrant and create a 
 
 ## Usage
 ./create-azure-env.sh <Parameters>
+ 
  Parameters:
- --dry-run Skip creating any resources
- --test Just generate the files based on defaults
- --skip-login Skip logging into Azure and re-use the existing login
- --prefix <value> Enter a prefix for skipping inputs
- --subscription <value> Enter Azure SubscriptionID
- --resource-group <value> Enter Azure Resource Group
- --location <value> Enter Azure Location (e.g. usgoviowa)
+ - --dry-run Skip creating any resources
+ - --test Just generate the files based on defaults
+ - --skip-login Skip logging into Azure and re-use the existing login
+ - --prefix <value> Enter a prefix for skipping inputs
+ - --subscription <value> Enter Azure SubscriptionID
+ - --resource-group <value> Enter Azure Resource Group
+ - --location <value> Enter Azure Location (e.g. usgoviowa)
 
 ## Steps to setup Azure Env
 1. ./create-azure-env.sh script creates all the required Azure resources and generates config files needed for PCF install in the 'temp' directory:
