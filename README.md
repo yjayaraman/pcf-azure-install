@@ -34,11 +34,11 @@ If you are running windows desktop, install virtualBox and Vagrant and create a 
 3. SSH on to the jumpbox
 
 4. Run the following commands:
- cd ~/pcf-azure-install/scripts
- sudo ./setupbosh.sh
- ./download_artifacts.sh
- ./deploy_bosh_director.sh
- ./deploy_pcf.sh
- ./deploy_all.sh
+ - cd ~/pcf-azure-install/scripts
+ - sudo ./setupbosh.sh
+ - ./download_artifacts.sh
+ - ./deploy_bosh_director.sh
+ - ./deploy_pcf.sh
+ - ./deploy_all.sh
  
  
