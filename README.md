@@ -13,6 +13,7 @@ If you are running windows desktop, install virtualBox and Vagrant and create a 
 ./create-azure-env.sh <Parameters>
  
  Parameters:
+ - --help Display these options
  - --dry-run Skip creating any resources
  - --test Just generate the files based on defaults
  - --skip-login Skip logging into Azure and re-use the existing login
