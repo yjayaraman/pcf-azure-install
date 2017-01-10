@@ -37,13 +37,35 @@ generate_cf_yml()
 
     sed -f temp/cf.txt<temp/cf.tmp > temp/cf1.yml
 
-    PUB_CERT=$(<temp/your-cert.pem)
-    PRI_KEY=$(<temp/your-private-key.pem)
+    #PUB_CERT=$(<temp/your-cert.pem)
+    PUB_CERT=`sed 's/^/       /' <temp/your-cert.pem`
+    #PRI_KEY=$(<temp/your-private-key.pem)
+    PRI_KEY=`sed 's/^/       /' <temp/your-private-key.pem`
     echo "Public cert is $PUB_CERT"
     awk -v var="$PUB_CERT" '{ sub(/__PUBLIC_CERT__/, var, $0) }1' temp/cf1.yml >temp/cf2.yml
     echo "Private key  is $PRI_KEY"
     awk -v var="$PRI_KEY" '{ sub(/__PRIVATE_KEY__/, var, $0) }1' temp/cf2.yml >~/manifests/deployments/cf.yml
 
+}
+
+generate_apm_yml()
+{
+    sed -f temp/cf.txt<../templates/apm.cnf > ~/manifests/deployments/apm.yml
+}
+
+generate_rabbitmq_yml()
+{
+    sed -f temp/cf.txt<../templates/p-rabbitmq.cnf > ~/manifests/deployments/p-rabbitmq.yml
+}
+
+generate_mysql_yml()
+{
+    sed -f temp/cf.txt<../templates/p-mysql.cnf > ~/manifests/deployments/p-mysql.yml
+}
+
+generate_spring_cloud_services_yml()
+{
+    sed -f temp/cf.txt<../templates/p-spring-cloud-services.cnf > ~/manifests/deployments/p-spring-cloud-services.yml
 }
 
 upload_artifacts()
@@ -114,6 +136,10 @@ openssl x509 -req -days 3650 -in temp/csr.pem -signkey temp/your-private-key.pem
 openssl x509 -text -noout -in temp/your-cert.pem
 
 generate_cf_yml
+generate_apm_yml
+generate_rabbitmq_yml
+generate_mysql_yml
+generate_spring_cloud_services_yml
 
 upload_artifacts
 

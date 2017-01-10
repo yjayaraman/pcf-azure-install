@@ -88,6 +88,7 @@ echo_tofile()
   echo "PUBLIC_IP=$PUBLIC_IP " >&3
   echo "PCF_SSH_LB=$PCF_SSH_LB " >&3
   echo "PUBLIC_SSH_IP=$PUBLIC_SSH_IP " >&3
+  echo "JUMP_PUBLIC_IP=$JUMP_PUBLIC_IP " >&3
 
   # close fd # 3
   exec 3>&-
@@ -117,6 +118,7 @@ echo_inputs()
   echo "*   PCF_SSH_LB         :    $PCF_SSH_LB " 
   echo "*   PUBLIC_SSH_IP      :    $PUBLIC_SSH_IP "                                                                                    
   echo "*   PREFIX             :    $PREFIX "                                                                              
+  echo "*   JUMP_PUBLIC_IP     :    $JUMP_PUBLIC_IP "                                                                              
   echo "*************************************************************************************"
 
 
@@ -573,7 +575,8 @@ create_jumpbox()
   while [ -z $JUMPPASSWORD ]; do
       read -p "Enter Jump Box Admin Password (At least 8 characters and must contain uppercase, lowercase, numbers, and special chars) : " JUMPPASSWORD
   done
-  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password $JUMPPASSWORD --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump pcf-jump
+  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password $JUMPPASSWORD --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump 
+  JUMP_PUBLIC_IP=`azure vm show $RESOURCE_GROUP pcf-jump | grep IP | cut -f3 -d':'`
 }
 
 create_storage()
@@ -884,18 +887,17 @@ read_inputs_create_resources
 
 generate_bosh_yml
 
-if [ -z "$DRYRUN" ]; then
-  echo -e "\033[1;92m Copying files to the jumpbox. Enter $JUMPPASSWORD as password when prompted: \033[0m" 
-  scp -r ../../pcf-azure-install ubuntu@13.72.184.195:.
-fi
-
-
-
 echo_inputs
 
 echo_tofile
 
 echo_next_steps
+
+
+if [ -z "$DRYRUN" ]; then
+  echo -e "\033[1;92m Copying files to the jumpbox. Enter $JUMPPASSWORD as password when prompted: \033[0m" 
+  scp -r ../../pcf-azure-install ubuntu@$JUMP_PUBLIC_IP:.
+fi
 
 #spinner
 

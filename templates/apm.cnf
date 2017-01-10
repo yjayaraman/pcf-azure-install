@@ -1,0 +1,423 @@
+---
+name: apm-07c963a46431b85d9990
+director_uuid: __DIRECTOR_UUID__
+releases:
+- name: etcd
+  version: '72'
+- name: logsearch
+  version: 204.0.0
+- name: metrix
+  version: 1.1.0-beta.48
+- name: kafka
+  version: '13'
+stemcells:
+- alias: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  os: ubuntu-trusty
+  version: '3233.2'
+instance_groups:
+- name: push-apps
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: errand
+  jobs:
+  - name: push-apps
+    release: metrix
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F4s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    apm:
+      cookie_secret: myfuAtGmmwYFycRIUv_P812jPnusxpq4
+      refresh_token_secret: uToqmpcQfUGdz-YHsI3IGxkH5zPo018M
+      uaa_client_id: apps_metrics
+      uaa_client_secret: uZ5SHysjQpYmyK9_xEijbwDqRDVEGvQN
+      url: https://metrics.__DOMAIN_NAME__/
+    cc:
+      url: https://api.__DOMAIN_NAME__
+    cf:
+      api_url: https://api.__DOMAIN_NAME__
+      uaa_url: https://login.__DOMAIN_NAME__
+      admin_username: admin
+      admin_password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+      cloud_controller:
+        system_domain: __DOMAIN_NAME__
+    elasticsearch:
+      master_host_url: http://10.0.0.65:9200
+      data_node_count: 2
+    firehose:
+      url: wss://doppler.__DOMAIN_NAME__:443
+      user: apps_metrics_processing
+      password: yFU6BiSXCHPZVB_2IfAa7nJgH0S064eH
+    healthkit:
+      ip: ''
+    imds:
+      replicas: 3
+      network:
+        endpoints:
+        - 10.0.0.62
+      container:
+        endpoints:
+        - 10.0.0.63
+      appevent:
+        endpoints:
+        - 10.0.0.64
+    ingestor:
+      cf:
+        instance_count: 1
+        instance_memory: 1G
+    kafka:
+      brokers:
+      - 10.0.0.61
+      defaultPartitions: 100
+    logqueue:
+      cf:
+        app_name: metrics-logqueue
+      port: 443
+    ssl:
+      skip_cert_verify: true
+    uaa:
+      url: https://login.__DOMAIN_NAME__
+  env:
+    bosh:
+      password: "$6$3850a046c36621e4$hIiqsl9wns7Ox68pciP6Z5FDNwui0z5vDQFuQoeF3Rx9BduE8Rds0xWd.cZgGMda.QEpcsoStvJ3ssihpg7XB."
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.59
+- name: zookeeper
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: service
+  jobs:
+  - name: zookeeper
+    release: kafka
+    consumes: {}
+    provides: {}
+  vm_type: Standard_DS12_v2
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    zookeeper:
+      ips:
+      - 10.0.0.60
+  env:
+    bosh:
+      password: "$6$517f76293ed74f06$LLnP8rPogwBf7fKyZurS9Y.bKW9ywconrmckE/MNAFGOlEEd5aCNEXZZOzCYQLkli8h/d2EwOB4P/HK44044x1"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.60
+  migrated_from:
+  - name: zookeeper-partition-null-az
+    az: 'null'
+- name: kafka
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: service
+  jobs:
+  - name: kafka-server
+    release: kafka
+    consumes: {}
+    provides: {}
+  vm_type: Standard_DS12_v2
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    kafka:
+      defaultPartitions: 100
+      defaultReplicationFactor: 1
+      ephemeralDisk: 204800
+      retentionHours: 24
+      numberOfTopics: 3
+      brokers:
+      - 10.0.0.61
+    zookeeper:
+      ips:
+      - 10.0.0.60
+  env:
+    bosh:
+      password: "$6$d7c1951120e420ba$1bydDenCFhE6bgznk4S0tiwI79iZQQaXjp0ZP7BnpIuZKvOvOPGbN.LrO4dRsNlvY8LYUY6mRLmAzqpokgIVa/"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.61
+  migrated_from:
+  - name: kafka-partition-null-az
+    az: 'null'
+- name: networkimds
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: service
+  jobs:
+  - name: imds
+    release: metrix
+    consumes: {}
+    provides: {}
+  vm_type: Standard_DS12_v2
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    uaa:
+      url: https://login.__DOMAIN_NAME__
+    cc:
+      url: https://api.__DOMAIN_NAME__
+      queryUser: apps_metrics_processing
+      queryPassword: yFU6BiSXCHPZVB_2IfAa7nJgH0S064eH
+    kafka:
+      brokers:
+      - 10.0.0.61
+      defaultPartitions: 100
+    imds:
+      replicas: 3
+      totalInstances: 1
+      metricType: HttpStartStop
+    healthkit:
+      ip: ''
+    ssl:
+      skip_cert_verify: true
+  env:
+    bosh:
+      password: "$6$79e5a53bead0784e$3bh/ztwVhfPwLL3MvrPbpXlhu2TNr2zElTH9Dpv1/BlwEwzHfljQnSXg8pAPtx0RlOzi4hlg2gV8f7QRVJky70"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.62
+  migrated_from:
+  - name: networkimds-partition-null-az
+    az: 'null'
+- name: containerimds
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: service
+  jobs:
+  - name: imds
+    release: metrix
+    consumes: {}
+    provides: {}
+  vm_type: Standard_DS12_v2
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    uaa:
+      url: https://login.__DOMAIN_NAME__
+    cc:
+      url: https://api.__DOMAIN_NAME__
+      queryUser: apps_metrics_processing
+      queryPassword: yFU6BiSXCHPZVB_2IfAa7nJgH0S064eH
+    kafka:
+      brokers:
+      - 10.0.0.61
+      defaultPartitions: 100
+    imds:
+      replicas: 3
+      totalInstances: 1
+      metricType: ContainerMetric
+      bucketDuration: 30s
+    healthkit:
+      ip: ''
+    ssl:
+      skip_cert_verify: true
+  env:
+    bosh:
+      password: "$6$031cd2e5635861fa$Vqu2QVHKWbfq9h6h4jO0TRTen.6zuwv9mMbbL9C1XcHeEE/AJyvBK8RRDidaulkN0vqxJhaMnMN1Kczel7gqu/"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.63
+  migrated_from:
+  - name: containerimds-partition-null-az
+    az: 'null'
+- name: appeventimds
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: service
+  jobs:
+  - name: imds
+    release: metrix
+    consumes: {}
+    provides: {}
+  vm_type: Standard_DS12_v2
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    uaa:
+      url: https://login.__DOMAIN_NAME__
+    cc:
+      url: https://api.__DOMAIN_NAME__
+      queryUser: apps_metrics_processing
+      queryPassword: yFU6BiSXCHPZVB_2IfAa7nJgH0S064eH
+    kafka:
+      brokers:
+      - 10.0.0.61
+      defaultPartitions: 100
+    imds:
+      replicas: 3
+      totalInstances: 1
+      metricType: LogMessage
+    healthkit:
+      ip: ''
+    ssl:
+      skip_cert_verify: true
+  env:
+    bosh:
+      password: "$6$5d9b285551064d42$IFT4RGJ3EIqq7J/nsOtoVypH.vTVf9CdqB4SuXeCOhF/v56RA4/Ef1rE2NUAtfBDB3oa/WlP/Zpz7q/MedckE0"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.64
+  migrated_from:
+  - name: appeventimds-partition-null-az
+    az: 'null'
+- name: elasticsearch_master
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: service
+  jobs:
+  - name: elasticsearch
+    release: logsearch
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F2s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    elasticsearch:
+      cluster_name: logsearch
+      exec:
+        environment:
+          ES_HEAP_SIZE: 256M
+      node:
+        allow_data: false
+        allow_master: true
+      master_hosts:
+      - 10.0.0.65
+  env:
+    bosh:
+      password: "$6$4389e3059b9ff3f1$6zaidRzNRU4HN9fh7j8SQM4WstBq5iLvmZR585POKAbHKEgVu/rQfvBqECKHS.0K5RDE/aNCCWmmjSQXrLLeF1"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.65
+  migrated_from:
+  - name: elasticsearch_master-partition-null-az
+    az: 'null'
+  persistent_disk_type: '51200'
+- name: elasticsearch_data
+  azs:
+  - 'null'
+  instances: 2
+  lifecycle: service
+  jobs:
+  - name: elasticsearch
+    release: logsearch
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F2s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    elasticsearch:
+      cluster_name: logsearch
+      exec:
+        environment:
+          ES_HEAP_SIZE: 256M
+      node:
+        allow_master: false
+        allow_data: true
+      master_hosts:
+      - 10.0.0.65
+  env:
+    bosh:
+      password: "$6$197833b4915ac3d7$.byUTG.A9fjCOvpsVrpnHTXH7/45i0uSDVPw1srfniyjhJ7pSNep4q.WeSIRUzCGj8ejjmyIY3Y0k25qPMme61"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+    static_ips:
+    - 10.0.0.66
+    - 10.0.0.67
+  migrated_from:
+  - name: elasticsearch_data-partition-null-az
+    az: 'null'
+  persistent_disk_type: '102400'
+- name: cleanup
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: errand
+  jobs:
+  - name: cleanup
+    release: metrix
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F1s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    cc:
+      url: https://api.__DOMAIN_NAME__
+    cf:
+      admin_username: admin
+      admin_password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+      cloud_controller:
+        system_domain: __DOMAIN_NAME__
+    logqueue:
+      cf:
+        app_name: metrics-logqueue
+    ssl:
+      skip_cert_verify: true
+  env:
+    bosh:
+      password: "$6$63bc28df92e75e46$Jh.K.42I1BUFsQFf9EjQ4WyvxKRpdD6IBVL3b4/cQy9ceG5QL66qE/pieYuHzCnfHPlpIIvXF8TO5aHpeIb5n0"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+update:
+  canaries: 1
+  canary_watch_time: 30000-300000
+  update_watch_time: 30000-300000
+  max_in_flight: 1
+  max_errors: 2
+  serial: true

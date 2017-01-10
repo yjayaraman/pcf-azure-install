@@ -1,0 +1,217 @@
+---
+name: p-spring-cloud-services-f36bb79b94275406c643
+director_uuid: ignore
+releases:
+- name: spring-cloud-broker
+  version: 1.2.1-build.10
+stemcells:
+- alias: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  os: ubuntu-trusty
+  version: '3263.7'
+instance_groups:
+- name: deploy-service-broker
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: errand
+  jobs:
+  - name: deploy-service-broker
+    release: spring-cloud-broker
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F1s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    domain: __DOMAIN_NAME__
+    app_domains:
+    - __DOMAIN_NAME__
+    ssl:
+      skip_cert_verify: true
+    spring_cloud_broker:
+      product_name: 
+      app_name: 
+      app_uri: 
+      broker:
+        org_name: 
+        space_name: 
+        user: Zc1dZSIJd_oiwiTr-np_Znp2AYdjUEiI
+        password: YNGDM8EtBb8GHdgvhiG1Q_RRtNQ8lAwE
+        max_instances: 100
+      worker:
+        client_id: 
+        client_secret: nCefeVxdhqGCQh-g66FiAtWOykkk61-w
+        user: admin
+        password: uo29o5UOHOP1m-yDYUYI9DrJiEjlGnLK
+      instances:
+        org_name: 
+        space_name: 
+        instances_user: p-spring-cloud-services
+        instances_password: la-UKOcbAxBJm1V0-mhQkFJpSV6SjA0h
+      app_push:
+        timeout: 180
+        memory: 
+      broker_dashboard_secret: NUK50Z_oX6HGdgO-BM6g8aPlNLotWWra
+      persistence_store_type: 
+      encryption_key: ljKm-U1r99Rte6pLgiHxkkUUd5sMvoSV
+      cf:
+        admin_user: admin
+        admin_password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+      uaa:
+        admin_client_id: admin
+        admin_client_secret: E4It8NEGdy3mmOi50DXp1V1FSw7-C7zS
+      buildpack: 
+  env:
+    bosh:
+      password: "$6$6447277c42165b44$pDZJO1n/U7Lv4V7IUywgB6KBvejC9MeaVdyYPpPi4oXADXteeANNx7LZ.nY5fkug0t6xKrGwo07Cowvcf6vGV/"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+- name: register-service-broker
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: errand
+  jobs:
+  - name: register-service-broker
+    release: spring-cloud-broker
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F1s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    domain: __DOMAIN_NAME__
+    app_domains:
+    - __DOMAIN_NAME__
+    ssl:
+      skip_cert_verify: true
+    spring_cloud_broker:
+      product_name: 
+      broker:
+        org_name: 
+        space_name: 
+        user: Zc1dZSIJd_oiwiTr-np_Znp2AYdjUEiI
+        password: YNGDM8EtBb8GHdgvhiG1Q_RRtNQ8lAwE
+        plan_names: 
+      app_name: 
+      app_uri: 
+      encryption_key: ljKm-U1r99Rte6pLgiHxkkUUd5sMvoSV
+      cf:
+        admin_user: admin
+        admin_password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+      uaa:
+        admin_client_id: admin
+        admin_client_secret: E4It8NEGdy3mmOi50DXp1V1FSw7-C7zS
+  env:
+    bosh:
+      password: "$6$a993d2badd904208$a5Mf5Hr1A8.g2Ka8ZUN7et.tiFIzgfOEZerSlNwKPMyVZ7T3ZQ15/eRa44haykEyAwh1YboCUN8eLtHtuJ0AA0"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+- name: run-smoke-tests
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: errand
+  jobs:
+  - name: smoke-tests
+    release: spring-cloud-broker
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F1s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    domain: __DOMAIN_NAME__
+    ssl:
+      skip_cert_verify: true
+    spring_cloud_broker:
+      product_name: 
+      broker:
+        org_name: 
+      smoke_test:
+        user: admin
+        password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+        space: 
+      encryption_key: ljKm-U1r99Rte6pLgiHxkkUUd5sMvoSV
+      cf:
+        admin_user: admin
+        admin_password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+      uaa:
+        admin_client_id: admin
+        admin_client_secret: E4It8NEGdy3mmOi50DXp1V1FSw7-C7zS
+  env:
+    bosh:
+      password: "$6$78ddd17b67704726$zYsiUfN97FUeMQs13.xctEZtKrDqmy4Wcz/Dl/PMeDOsSa9jTsfGGBS7JZ1h0nEGKJmbSpFpDDL5xX7da3xTd."
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+- name: destroy-service-broker
+  azs:
+  - 'null'
+  instances: 1
+  lifecycle: errand
+  jobs:
+  - name: destroy-service-broker
+    release: spring-cloud-broker
+    consumes: {}
+    provides: {}
+  vm_type: Standard_F1s
+  stemcell: bosh-azure-hyperv-ubuntu-trusty-go_agent
+  properties:
+    domain: __DOMAIN_NAME__
+    app_domains:
+    - __DOMAIN_NAME__
+    ssl:
+      skip_cert_verify: true
+    spring_cloud_broker:
+      product_name: 
+      broker:
+        org_name: 
+        space_name: 
+        user: Zc1dZSIJd_oiwiTr-np_Znp2AYdjUEiI
+        password: YNGDM8EtBb8GHdgvhiG1Q_RRtNQ8lAwE
+        plan_names: 
+      worker:
+        client_id: 
+        client_secret: XBMCN22e70fC8K-xW-yDXrM2dC1URKO3
+      instances:
+        org_name: 
+        space_name: 
+        instances_user: p-spring-cloud-services
+      app_name: 
+      app_uri: 
+      encryption_key: ljKm-U1r99Rte6pLgiHxkkUUd5sMvoSV
+      cf:
+        admin_user: admin
+        admin_password: qSvkmzXUkPVZsHdrIzElWJtiwB-kT4t-
+      uaa:
+        admin_client_id: admin
+        admin_client_secret: E4It8NEGdy3mmOi50DXp1V1FSw7-C7zS
+  env:
+    bosh:
+      password: "$6$c820983ede990a90$wjMgSstBDNXHr5AetkMx1GCWfflv5wekIVJYExLn2N2dvg0W6ZXnYqKSIIiHL3qHla8bKhIYnrbvj9oqESV451"
+  update:
+    max_in_flight: 1
+  networks:
+  - name: default
+    default:
+    - dns
+    - gateway
+update:
+  canaries: 1
+  canary_watch_time: 30000-300000
+  update_watch_time: 30000-300000
+  max_in_flight: 1
+  max_errors: 2
+  serial: true
