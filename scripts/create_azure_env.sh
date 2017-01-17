@@ -575,8 +575,11 @@ create_jumpbox()
   while [ -z $JUMPPASSWORD ]; do
       read -p "Enter Jump Box Admin Password (At least 8 characters and must contain uppercase, lowercase, numbers, and special chars) : " JUMPPASSWORD
   done
-  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password $JUMPPASSWORD --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name pcf-jump 
-  JUMP_PUBLIC_IP=`azure vm show $RESOURCE_GROUP pcf-jump | grep IP | cut -f3 -d':'`
+
+  read -p "Enter Jump Box Name : " JUMPNAME
+
+  azure vm create -vv --resource-group $RESOURCE_GROUP --location $LOCATION --os-type Linux --image-urn UbuntuLTS --admin-username ubuntu --admin-password $JUMPPASSWORD --vm-size Standard_D1_v2 --vnet-name $PCF_NET --vnet-subnet-name $PCF_SUBNET --nic-name pcf-jump-nic --public-ip-name jump-public-ip --public-ip-domain-name $JUMPNAME $JUMPNAME 
+  JUMP_PUBLIC_IP=`azure vm show $RESOURCE_GROUP $JUMPNAME | grep IP | cut -f3 -d':'`
 }
 
 create_storage()
