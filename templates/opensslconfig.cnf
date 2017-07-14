@@ -216,15 +216,16 @@ keyUsage = nonRepudiation, digitalSignature, keyEncipherment
 subjectAltName = @alt_names
 
 [alt_names]
-DNS.1 = *.__DOMAIN_NAME__
-DNS.2 = *.login.__DOMAIN_NAME__
-DNS.3 = *.uaa.__DOMAIN_NAME__
+DNS.1 = *.cfapps.__DOMAIN_NAME__
+DNS.2 = *.system.__DOMAIN_NAME__
+DNS.3 = *.login.system.__DOMAIN_NAME__
+DNS.4 = *.uaa.system.__DOMAIN_NAME__
 
 [ v3_ca ]
 
 
 # Extensions for a typical CA
-subjectAltName=DNS:*.__DOMAIN_NAME__,DNS:*.login.__DOMAIN_NAME__,DNS:*.uaa.__DOMAIN_NAME__
+subjectAltName=DNS:*.cfapps.__DOMAIN_NAME__,DNS:*.system.__DOMAIN_NAME__,DNS:*.login.system.__DOMAIN_NAME__,DNS:*.uaa.system.__DOMAIN_NAME__
 
 
 # PKIX recommendation.
